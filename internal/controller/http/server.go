@@ -41,6 +41,12 @@ func (r *server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequest
 		if errors.Is(err, usecase.ErrInvalidPassword) {
 			return gen.PostApiAuth400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 		}
+		if errors.Is(err, usecase.ErrUnsafePassword) {
+			return gen.PostApiAuth400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
+		if errors.Is(err, usecase.ErrLongPassword) {
+			return gen.PostApiAuth400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
 
 		return gen.PostApiAuth500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 	}

@@ -12,7 +12,8 @@ import (
 var _ UserUseCase = (*User)(nil)
 
 const (
-	initCoins = 1000
+	initCoins      = 1000
+	minPasswordLen = 6
 )
 
 type User struct {
@@ -46,6 +47,14 @@ func NewUser(
 }
 
 func (r *User) Auth(ctx context.Context, login entity.Login) (*entity.Token, error) {
+	if len(login.Password) < minPasswordLen {
+		return nil, ErrUnsafePassword
+	}
+
+	if len(login.Password) > 20 {
+		return nil, ErrLongPassword
+	}
+
 	passHash, err := r.authRepo.ReadPassword(ctx, login.Username)
 	if err != nil {
 		if errors.Is(err, port.ErrNotFound) {
