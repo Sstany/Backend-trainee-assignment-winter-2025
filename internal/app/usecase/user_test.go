@@ -25,12 +25,12 @@ func TestLogin(t *testing.T) {
 	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
 
 	login := entity.Login{
-		Password: "test",
+		Password: "testtest",
 		Username: "test",
 	}
 
-	passHasher.EXPECT().Hash("test").Return("hash-test", nil).AnyTimes()
-	passHasher.EXPECT().Compare("test", "hash-test").Return(true).AnyTimes()
+	passHasher.EXPECT().Hash("testtest").Return("hash-test", nil).AnyTimes()
+	passHasher.EXPECT().Compare("testtest", "hash-test").Return(true).AnyTimes()
 
 	ctx := context.Background()
 	authRepo.EXPECT().ReadPassword(ctx, "test").Return("hash-test", nil).AnyTimes()
@@ -85,15 +85,16 @@ func TestRegister(t *testing.T) {
 	defer ctrl.Finish()
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
+	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
 	passHasher := password.NewMockPassHasher(ctrl)
-	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
+	userUsecase := usecase.NewUser(authRepo, nil, balanceRepo, nil, passHasher, nil)
 
 	login := entity.Login{
-		Password: "new",
+		Password: "newnewnew",
 		Username: "new",
 	}
 
-	passHasher.EXPECT().Hash("new").Return("hash-new", nil).AnyTimes()
+	passHasher.EXPECT().Hash("newnewnew").Return("hash-new", nil).AnyTimes()
 
 	hash, err := passHasher.Hash(login.Password)
 	if err != nil {
@@ -109,6 +110,7 @@ func TestRegister(t *testing.T) {
 
 	authRepo.EXPECT().ReadPassword(ctx, "new").Return("", port.ErrNotFound).AnyTimes()
 	authRepo.EXPECT().CreateUser(ctx, loginWithHash).Return(nil).AnyTimes()
+	balanceRepo.EXPECT().Create(ctx, "new", 1000).Return(nil).AnyTimes()
 
 	_, err = userUsecase.Auth(ctx, login)
 	if err != nil {
