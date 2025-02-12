@@ -1,0 +1,22 @@
+meta {
+  name: Send coins
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/api/sendCoin
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{token}}
+}
+
+body:json {
+  {
+    "toUser": "",
+    "amount": ""
+  }
+}

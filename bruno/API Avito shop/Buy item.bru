@@ -1,0 +1,19 @@
+meta {
+  name: Buy item
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/api/buy/:item
+  body: none
+  auth: bearer
+}
+
+params:path {
+  item: 
+}
+
+auth:bearer {
+  token: {{token}}
+}
