@@ -9,6 +9,6 @@ import (
 type UserUseCase interface {
 	Auth(ctx context.Context, login entity.Login) (*entity.Token, error)
 	// Send() error
-	// Info() (*entity.UserInfo, error)
-	// Buy(item *entity.Product) error
+	//Info() (*entity.UserInfo, error)
+	Buy(ctx context.Context, item entity.ItemRequest) error
 }

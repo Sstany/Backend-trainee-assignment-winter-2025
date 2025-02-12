@@ -3,7 +3,7 @@ package app
 import (
 	"database/sql"
 
-	_ "github.com/lib/pq"
+	_ "github.com/lib/pq" // Postgres driver.
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -48,7 +48,11 @@ func Run(cfg *config.Config) {
 
 	authRepo := repo.NewAuth(db, logger.Named("auth-repo"))
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
-	userUsecase := usecase.NewUser(authRepo, passHasher)
+	shopRepo := repo.NewShop(logger.Named("shop"))
+	balanceRepo := repo.NewBalance(db, logger.Named("balance"))
+	inventoryRepo := repo.NewInventory(logger.Named("inventory"))
+	transactionController := repo.NewTransactionSQL(db, logger.Named("transaction-ctrl"))
+	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
 
 	handler.NewServer(logger.Named("http"), userUsecase, cfg.Address).Start()
 }

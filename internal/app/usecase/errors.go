@@ -4,4 +4,6 @@ import "errors"
 
 var (
 	ErrInvalidPassword = errors.New("invalid password")
+
+	ErrItemNotExists = errors.New("item not exists")
 )

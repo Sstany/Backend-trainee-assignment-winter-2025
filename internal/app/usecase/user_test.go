@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"shop/internal/adapter/password"
-	"shop/internal/adapter/repo"
+	repo "shop/internal/adapter/repo"
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
 	"shop/internal/app/usecase"
@@ -22,7 +22,7 @@ func TestLogin(t *testing.T) {
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	passHasher := password.NewMockPassHasher(ctrl)
-	userUsecase := usecase.NewUser(authRepo, passHasher)
+	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
 
 	login := entity.Login{
 		Password: "test",
@@ -39,7 +39,6 @@ func TestLogin(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	// TODO: Check that JWT is created with right username
 }
 
 func TestLoginWithInvalidPassword(t *testing.T) {
@@ -54,7 +53,7 @@ func TestLoginWithInvalidPassword(t *testing.T) {
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
-	userUsecase := usecase.NewUser(authRepo, passHasher)
+	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
 
 	login := entity.Login{
 		Password: "invalid",
@@ -87,7 +86,7 @@ func TestRegister(t *testing.T) {
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	passHasher := password.NewMockPassHasher(ctrl)
-	userUsecase := usecase.NewUser(authRepo, passHasher)
+	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
 
 	login := entity.Login{
 		Password: "new",
