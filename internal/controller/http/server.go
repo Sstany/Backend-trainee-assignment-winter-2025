@@ -49,7 +49,31 @@ func (r *server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequest
 }
 
 func (r *server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemRequestObject) (gen.GetApiBuyItemResponseObject, error) {
-	return nil, nil
+	item := entity.Item(request.Item)
+	//username := ctx.Value("username")
+
+	var username any = "T"
+	usrStr := username.(string)
+
+	req := entity.ItemRequest{
+		Username: usrStr,
+		Item:     string(item),
+	}
+
+	err := r.userUsecase.Buy(ctx, req)
+	if err != nil {
+		if errors.Is(err, usecase.ErrInsufficientBalance) {
+			return gen.GetApiBuyItem400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
+		if errors.Is(err, usecase.ErrItemNotExists) {
+			return gen.GetApiBuyItem400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
+
+		return gen.GetApiBuyItem500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+	}
+
+	return gen.GetApiBuyItem200Response{}, nil
+
 }
 
 func (r *server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestObject) (gen.GetApiInfoResponseObject, error) {

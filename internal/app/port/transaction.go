@@ -7,7 +7,7 @@ import (
 
 var _ Transaction = (*sql.Tx)(nil)
 
-//go:generate mockgen -destination ../../adapter/repo/transaction_mock.go -package repo -source ./transaction.go
+//go:generate mockgen -destination ../../adapter/repo/mock/transaction_mock.go -package repo -source ./transaction.go
 
 type TransactionController interface {
 	BeginTx(ctx context.Context) (Transaction, error)

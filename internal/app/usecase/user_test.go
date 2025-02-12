@@ -9,7 +9,7 @@ import (
 	"go.uber.org/zap"
 
 	"shop/internal/adapter/password"
-	repo "shop/internal/adapter/repo"
+	repo "shop/internal/adapter/repo/mock"
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
 	"shop/internal/app/usecase"

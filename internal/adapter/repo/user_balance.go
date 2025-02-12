@@ -7,14 +7,16 @@ import (
 
 	"shop/internal/app/port"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
 var _ port.UserBalanceRepo = (*Balance)(nil)
 
 const (
-	readBalance   = "SELECT balance FROM user_balance WHERE username=$1"
-	changeBalance = "UPDATE balance FROM user_balance SET balance = balance + $1 WHERE username=$2"
+	readBalance   = "SELECT balance FROM wallets WHERE username=$1"
+	changeBalance = "UPDATE wallets SET balance = balance + $1 WHERE username=$2"
+	create        = "INSERT INTO wallets (username, balance) VALUES($1, $2)"
 )
 
 type Balance struct {
@@ -44,7 +46,21 @@ func (r *Balance) GetUserBalance(ctx context.Context, name string) (int, error) 
 }
 
 func (r *Balance) ChangeUserBalance(tx port.Transaction, count int, name string) error {
-	tx.Exec(changeBalance)
+	_, err := tx.Exec(changeBalance, count, name)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Code == "23514" {
+				return port.ErrInsufficientBalance
+			}
+		}
+		return err
+	}
 
 	return nil
+}
+
+func (r *Balance) Create(ctx context.Context, name string, initCoins int) error {
+	_, err := r.db.ExecContext(ctx, create, name, initCoins)
+	return err
 }

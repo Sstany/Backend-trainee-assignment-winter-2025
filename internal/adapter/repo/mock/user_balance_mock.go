@@ -49,6 +49,20 @@ func (mr *MockUserBalanceRepoMockRecorder) ChangeUserBalance(tx, count, name int
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ChangeUserBalance", reflect.TypeOf((*MockUserBalanceRepo)(nil).ChangeUserBalance), tx, count, name)
 }
 
+// Create mocks base method.
+func (m *MockUserBalanceRepo) Create(ctx context.Context, name string, initCoins int) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, name, initCoins)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockUserBalanceRepoMockRecorder) Create(ctx, name, initCoins interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockUserBalanceRepo)(nil).Create), ctx, name, initCoins)
+}
+
 // GetUserBalance mocks base method.
 func (m *MockUserBalanceRepo) GetUserBalance(ctx context.Context, name string) (int, error) {
 	m.ctrl.T.Helper()

@@ -11,6 +11,10 @@ import (
 
 var _ UserUseCase = (*User)(nil)
 
+const (
+	initCoins = 1000
+)
+
 type User struct {
 	authRepo              port.AuthRepo
 	shopRepo              port.ShopRepo
@@ -56,6 +60,10 @@ func (r *User) Auth(ctx context.Context, login entity.Login) (*entity.Token, err
 				return nil, fmt.Errorf("create user: %w", err)
 			}
 
+			if err = r.balanceRepo.Create(ctx, login.Username, initCoins); err != nil {
+				return nil, fmt.Errorf("create user balance; %w", err)
+			}
+
 			// TODO: return jwt
 
 			return nil, nil
@@ -87,17 +95,20 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 	err = r.balanceRepo.ChangeUserBalance(tx, -price, itemRequest.Username)
 	if err != nil {
 		tx.Rollback()
-		return err
+		if errors.Is(err, port.ErrInsufficientBalance) {
+			return ErrInsufficientBalance
+		}
+		return fmt.Errorf("change user balance: %w", err)
 	}
 
 	err = r.inventoryRepo.AddItem(tx, itemRequest.Username, itemRequest.Item)
 	if err != nil {
 		tx.Rollback()
-		return err
+		return fmt.Errorf("add item to user: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
-		return err
+		return fmt.Errorf("buy trancastion: %w", err)
 	}
 
 	return nil

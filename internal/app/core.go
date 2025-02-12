@@ -50,7 +50,7 @@ func Run(cfg *config.Config) {
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
 	shopRepo := repo.NewShop(logger.Named("shop"))
 	balanceRepo := repo.NewBalance(db, logger.Named("balance"))
-	inventoryRepo := repo.NewInventory(logger.Named("inventory"))
+	inventoryRepo := repo.NewInventory(db, logger.Named("inventory"))
 	transactionController := repo.NewTransactionSQL(db, logger.Named("transaction-ctrl"))
 	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
 
