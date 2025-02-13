@@ -29,7 +29,7 @@ func TestBuy(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 
-	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
+	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, nil)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",
@@ -64,7 +64,7 @@ func TestBuyNotExistItem(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 
-	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
+	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, nil)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",
@@ -94,7 +94,7 @@ func TestWithInsufficientBalance(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 
-	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
+	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, nil)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",

@@ -22,7 +22,7 @@ func TestLogin(t *testing.T) {
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	passHasher := password.NewMockPassHasher(ctrl)
-	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
+	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil, nil)
 
 	login := entity.Login{
 		Password: "testtest",
@@ -53,7 +53,7 @@ func TestLoginWithInvalidPassword(t *testing.T) {
 
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
-	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil)
+	userUsecase := usecase.NewUser(authRepo, nil, nil, nil, passHasher, nil, nil)
 
 	login := entity.Login{
 		Password: "invalid",
@@ -87,7 +87,7 @@ func TestRegister(t *testing.T) {
 	authRepo := repo.NewMockAuthRepo(ctrl)
 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
 	passHasher := password.NewMockPassHasher(ctrl)
-	userUsecase := usecase.NewUser(authRepo, nil, balanceRepo, nil, passHasher, nil)
+	userUsecase := usecase.NewUser(authRepo, nil, balanceRepo, nil, passHasher, nil, nil)
 
 	login := entity.Login{
 		Password: "newnewnew",

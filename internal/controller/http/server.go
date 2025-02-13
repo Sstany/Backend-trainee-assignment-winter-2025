@@ -87,7 +87,26 @@ func (r *server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestOb
 }
 
 func (r *server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoinRequestObject) (gen.PostApiSendCoinResponseObject, error) {
-	return nil, nil
+	var username any = "T"
+	usrStr := username.(string)
+
+	req := entity.SendCoinRequest{
+		Amount:   request.Body.Amount,
+		FromUser: usrStr,
+		ToUser:   request.Body.ToUser,
+	}
+
+	err := r.userUsecase.Send(ctx, req)
+	if err != nil {
+		if errors.Is(err, usecase.ErrWrongCoinAmount) {
+			return gen.PostApiSendCoin400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
+
+		return gen.PostApiSendCoin500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+	}
+
+	return gen.PostApiSendCoin200Response{}, nil
+
 }
 
 func (r *server) Start() {

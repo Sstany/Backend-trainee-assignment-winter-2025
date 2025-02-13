@@ -52,7 +52,16 @@ func Run(cfg *config.Config) {
 	balanceRepo := repo.NewBalance(db, logger.Named("balance"))
 	inventoryRepo := repo.NewInventory(db, logger.Named("inventory"))
 	transactionController := repo.NewTransactionSQL(db, logger.Named("transaction-ctrl"))
-	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController)
+	userTransactionRepo := repo.NewUserTransaction(db, logger)
+	userUsecase := usecase.NewUser(
+		authRepo,
+		shopRepo,
+		balanceRepo,
+		inventoryRepo,
+		passHasher,
+		transactionController,
+		userTransactionRepo,
+	)
 
 	handler.NewServer(logger.Named("http"), userUsecase, cfg.Address).Start()
 }

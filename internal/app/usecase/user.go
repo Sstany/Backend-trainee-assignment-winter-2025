@@ -23,6 +23,7 @@ type User struct {
 	inventoryRepo         port.UserInventoryRepo
 	passHasher            port.PassHasher
 	transactionController port.TransactionController
+	userTransactionRepo   port.UserTransactionRepo
 	// userInfoRepo
 	// transactionRepos
 	// inventoryRepo
@@ -35,6 +36,7 @@ func NewUser(
 	inventoryRepo port.UserInventoryRepo,
 	passHasher port.PassHasher,
 	transactionController port.TransactionController,
+	userTransactionRepo port.UserTransactionRepo,
 ) *User {
 	return &User{
 		authRepo:              authRepo,
@@ -43,6 +45,7 @@ func NewUser(
 		inventoryRepo:         inventoryRepo,
 		passHasher:            passHasher,
 		transactionController: transactionController,
+		userTransactionRepo:   userTransactionRepo,
 	}
 }
 
@@ -114,6 +117,44 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 	if err != nil {
 		tx.Rollback()
 		return fmt.Errorf("add item to user: %w", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("buy trancastion: %w", err)
+	}
+
+	return nil
+}
+
+func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
+	if sendReq.Amount <= 0 {
+		return ErrWrongCoinAmount
+	}
+
+	tx, err := r.transactionController.BeginTx(ctx)
+	if err != nil {
+		return err
+	}
+
+	err = r.balanceRepo.ChangeUserBalance(tx, -(sendReq.Amount), sendReq.FromUser)
+	if err != nil {
+		tx.Rollback()
+		if errors.Is(err, port.ErrInsufficientBalance) {
+			return ErrInsufficientBalance
+		}
+		return fmt.Errorf("change user balance: %w", err)
+	}
+
+	err = r.balanceRepo.ChangeUserBalance(tx, sendReq.Amount, sendReq.ToUser)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("send coins to user: %w", err)
+	}
+
+	err = r.userTransactionRepo.SetUserTransaction(tx, sendReq)
+	if err != nil {
+		tx.Rollback()
+		return fmt.Errorf("add to wallet transaction: %w", err)
 	}
 
 	if err = tx.Commit(); err != nil {
