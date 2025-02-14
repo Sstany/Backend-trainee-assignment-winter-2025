@@ -5,7 +5,9 @@
 package repo
 
 import (
+	context "context"
 	reflect "reflect"
+	entity "shop/internal/app/entity"
 	port "shop/internal/app/port"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,15 +37,30 @@ func (m *MockUserInventoryRepo) EXPECT() *MockUserInventoryRepoMockRecorder {
 }
 
 // AddItem mocks base method.
-func (m *MockUserInventoryRepo) AddItem(tx port.Transaction, userName, item string) error {
+func (m *MockUserInventoryRepo) AddItem(tx port.Transaction, username, item string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "AddItem", tx, userName, item)
+	ret := m.ctrl.Call(m, "AddItem", tx, username, item)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddItem indicates an expected call of AddItem.
-func (mr *MockUserInventoryRepoMockRecorder) AddItem(tx, userName, item interface{}) *gomock.Call {
+func (mr *MockUserInventoryRepoMockRecorder) AddItem(tx, username, item interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddItem", reflect.TypeOf((*MockUserInventoryRepo)(nil).AddItem), tx, userName, item)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddItem", reflect.TypeOf((*MockUserInventoryRepo)(nil).AddItem), tx, username, item)
+}
+
+// Get mocks base method.
+func (m *MockUserInventoryRepo) Get(ctx context.Context, username string) ([]entity.Inventory, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Get", ctx, username)
+	ret0, _ := ret[0].([]entity.Inventory)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Get indicates an expected call of Get.
+func (mr *MockUserInventoryRepoMockRecorder) Get(ctx, username interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Get", reflect.TypeOf((*MockUserInventoryRepo)(nil).Get), ctx, username)
 }

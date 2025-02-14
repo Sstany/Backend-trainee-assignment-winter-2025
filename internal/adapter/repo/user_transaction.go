@@ -1,6 +1,7 @@
 package repo
 
 import (
+	"context"
 	"database/sql"
 
 	"shop/internal/app/entity"
@@ -12,7 +13,9 @@ import (
 var _ port.UserTransactionRepo = (*UserTransaction)(nil)
 
 const (
-	setUserTransaction = "INSERT INTO user_transactions (from, to, count) VALUES($1, $2, $3)"
+	setUserTransaction = "INSERT INTO user_transactions (user_from, user_to, amount) VALUES($1, $2, $3)"
+	getRecieved        = "SELECT user_from, amount FROM user_transactions WHERE user_to = $1"
+	getSent            = "SELECT user_to, amount FROM user_transactions WHERE user_from = $1"
 )
 
 type UserTransaction struct {
@@ -27,11 +30,60 @@ func NewUserTransaction(db *sql.DB, logger *zap.Logger) *UserTransaction {
 	}
 }
 
-func (*UserTransaction) SetUserTransaction(tx port.Transaction, sendCoin entity.SendCoinRequest) error {
+func (r *UserTransaction) SetUserTransaction(tx port.Transaction, sendCoin entity.SendCoinRequest) error {
 	_, err := tx.Exec(setUserTransaction, sendCoin.FromUser, sendCoin.ToUser, sendCoin.Amount)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+func (r *UserTransaction) GetRecievedOperations(ctx context.Context, username string) ([]entity.Received, error) {
+	rows, err := r.db.QueryContext(ctx, getRecieved, username)
+	if err != nil {
+		return nil, err
+
+	}
+	var recieved entity.Received
+	var res []entity.Received
+
+	for rows.Next() {
+		if err = rows.Scan(
+			&recieved.FromUser,
+			&recieved.Amount,
+		); err != nil {
+			r.logger.Error("get user recieved operations failed", zap.String("username", username), zap.Error(err))
+			break
+		}
+		res = append(res, recieved)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (r *UserTransaction) GetSentOperations(ctx context.Context, username string) ([]entity.Sent, error) {
+	rows, err := r.db.QueryContext(ctx, getSent, username)
+	if err != nil {
+		return nil, err
+
+	}
+	var sent entity.Sent
+	var res []entity.Sent
+
+	for rows.Next() {
+		if err = rows.Scan(
+			&sent.ToUser,
+			&sent.Amount,
+		); err != nil {
+			r.logger.Error("get user sent operations failed", zap.String("username", username), zap.Error(err))
+			break
+		}
+		res = append(res, sent)
+	}
+	return res, nil
 }

@@ -5,6 +5,7 @@
 package repo
 
 import (
+	context "context"
 	reflect "reflect"
 	entity "shop/internal/app/entity"
 	port "shop/internal/app/port"
@@ -33,6 +34,36 @@ func NewMockUserTransactionRepo(ctrl *gomock.Controller) *MockUserTransactionRep
 // EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockUserTransactionRepo) EXPECT() *MockUserTransactionRepoMockRecorder {
 	return m.recorder
+}
+
+// GetRecievedOperations mocks base method.
+func (m *MockUserTransactionRepo) GetRecievedOperations(ctx context.Context, username string) ([]entity.Received, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetRecievedOperations", ctx, username)
+	ret0, _ := ret[0].([]entity.Received)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRecievedOperations indicates an expected call of GetRecievedOperations.
+func (mr *MockUserTransactionRepoMockRecorder) GetRecievedOperations(ctx, username interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRecievedOperations", reflect.TypeOf((*MockUserTransactionRepo)(nil).GetRecievedOperations), ctx, username)
+}
+
+// GetSentOperations mocks base method.
+func (m *MockUserTransactionRepo) GetSentOperations(ctx context.Context, username string) ([]entity.Sent, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetSentOperations", ctx, username)
+	ret0, _ := ret[0].([]entity.Sent)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetSentOperations indicates an expected call of GetSentOperations.
+func (mr *MockUserTransactionRepoMockRecorder) GetSentOperations(ctx, username interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetSentOperations", reflect.TypeOf((*MockUserTransactionRepo)(nil).GetSentOperations), ctx, username)
 }
 
 // SetUserTransaction mocks base method.

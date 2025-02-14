@@ -24,7 +24,7 @@ type User struct {
 	passHasher            port.PassHasher
 	transactionController port.TransactionController
 	userTransactionRepo   port.UserTransactionRepo
-	// userInfoRepo
+	//userInfoRepo          port.UserInfoPort
 	// transactionRepos
 	// inventoryRepo
 }
@@ -37,6 +37,7 @@ func NewUser(
 	passHasher port.PassHasher,
 	transactionController port.TransactionController,
 	userTransactionRepo port.UserTransactionRepo,
+	//userInfoRepo port.UserInfoPort,
 ) *User {
 	return &User{
 		authRepo:              authRepo,
@@ -46,6 +47,7 @@ func NewUser(
 		passHasher:            passHasher,
 		transactionController: transactionController,
 		userTransactionRepo:   userTransactionRepo,
+		//	userInfoRepo:          userInfoRepo,
 	}
 }
 
@@ -162,4 +164,37 @@ func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
 	}
 
 	return nil
+}
+
+func (r *User) Info(ctx context.Context, infoReq entity.InfoRequest) (*entity.InfoResponse, error) {
+	items, err := r.inventoryRepo.Get(ctx, infoReq.Username)
+	if err != nil {
+		return nil, fmt.Errorf("get items with count; %w", err)
+	}
+
+	coins, err := r.balanceRepo.GetUserBalance(ctx, infoReq.Username)
+	if err != nil {
+		return nil, fmt.Errorf("user balance: %w", err)
+	}
+
+	rec, err := r.userTransactionRepo.GetRecievedOperations(ctx, infoReq.Username)
+	if err != nil {
+		return nil, fmt.Errorf("user recieved operations: %w", err)
+	}
+
+	sent, err := r.userTransactionRepo.GetSentOperations(ctx, infoReq.Username)
+	if err != nil {
+		return nil, fmt.Errorf("user sent operations: %w", err)
+	}
+
+	info := &entity.InfoResponse{
+		CoinHistory: entity.CoinHistory{
+			Received: rec,
+			Sent:     sent,
+		},
+		Coins:     coins,
+		Inventory: items,
+	}
+
+	return info, err
 }

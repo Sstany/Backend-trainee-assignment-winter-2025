@@ -83,7 +83,112 @@ func (r *server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemReq
 }
 
 func (r *server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestObject) (gen.GetApiInfoResponseObject, error) {
-	return nil, nil
+
+	infoReq := entity.InfoRequest{
+		Username: "T",
+	}
+
+	info, err := r.userUsecase.Info(ctx, infoReq)
+	if err != nil {
+		return gen.GetApiInfo500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+	}
+
+	return gen.GetApiInfo200JSONResponse(convertInfoToInfoResponse(info)), nil
+}
+
+func convertInfoToInfoResponse(info *entity.InfoResponse) gen.InfoResponse {
+	var received *[]struct {
+		Amount   *int    `json:"amount,omitempty"`
+		FromUser *string `json:"fromUser,omitempty"`
+	}
+
+	if len(info.CoinHistory.Received) > 0 {
+		rec := make([]struct {
+			Amount   *int    `json:"amount,omitempty"`
+			FromUser *string `json:"fromUser,omitempty"`
+		}, len(info.CoinHistory.Received))
+
+		for i := range info.CoinHistory.Received {
+			rec[i] =
+				struct {
+					Amount   *int    `json:"amount,omitempty"`
+					FromUser *string `json:"fromUser,omitempty"`
+				}{
+					Amount:   &info.CoinHistory.Received[i].Amount,
+					FromUser: &info.CoinHistory.Received[i].FromUser,
+				}
+		}
+
+		received = &rec
+	}
+
+	var sent *[]struct {
+		Amount *int    `json:"amount,omitempty"`
+		ToUser *string `json:"toUser,omitempty"`
+	}
+
+	if len(info.CoinHistory.Sent) > 0 {
+		s := make([]struct {
+			Amount *int    `json:"amount,omitempty"`
+			ToUser *string `json:"toUser,omitempty"`
+		}, len(info.CoinHistory.Sent))
+
+		for i := range info.CoinHistory.Sent {
+			s[i] =
+				struct {
+					Amount *int    `json:"amount,omitempty"`
+					ToUser *string `json:"toUser,omitempty"`
+				}{
+					Amount: &info.CoinHistory.Sent[i].Amount,
+					ToUser: &info.CoinHistory.Sent[i].ToUser,
+				}
+		}
+
+		sent = &s
+	}
+
+	var inventory *[]struct {
+		Quantity *int    `json:"quantity,omitempty"`
+		Type     *string `json:"type,omitempty"`
+	}
+
+	if len(info.Inventory) > 0 {
+		inv := make([]struct {
+			Quantity *int    `json:"quantity,omitempty"`
+			Type     *string `json:"type,omitempty"`
+		}, len(info.Inventory))
+
+		for i := range info.Inventory {
+			inv[i] =
+				struct {
+					Quantity *int    `json:"quantity,omitempty"`
+					Type     *string `json:"type,omitempty"`
+				}{
+					Quantity: &info.Inventory[i].Quantity,
+					Type:     &info.Inventory[i].Type,
+				}
+		}
+
+		inventory = &inv
+	}
+
+	return gen.InfoResponse{
+		CoinHistory: &struct {
+			Received *[]struct {
+				Amount   *int    "json:\"amount,omitempty\""
+				FromUser *string "json:\"fromUser,omitempty\""
+			} "json:\"received,omitempty\""
+			Sent *[]struct {
+				Amount *int    "json:\"amount,omitempty\""
+				ToUser *string "json:\"toUser,omitempty\""
+			} "json:\"sent,omitempty\""
+		}{
+			Received: received,
+			Sent:     sent,
+		},
+		Inventory: inventory,
+		Coins:     &info.Coins,
+	}
 }
 
 func (r *server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoinRequestObject) (gen.PostApiSendCoinResponseObject, error) {
@@ -106,7 +211,6 @@ func (r *server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoi
 	}
 
 	return gen.PostApiSendCoin200Response{}, nil
-
 }
 
 func (r *server) Start() {
