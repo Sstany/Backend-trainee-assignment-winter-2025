@@ -262,7 +262,7 @@ func (r *server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 
 			username, valid, err := r.authUsecase.AuthenticateWithAccessToken(tokenString)
 			if err != nil {
-				responseErr(w, "authentication with access token failed", http.StatusInternalServerError)
+				responseErr(w, "authentication with access token failed", http.StatusUnauthorized)
 				return
 			}
 			if !valid {

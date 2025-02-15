@@ -9,31 +9,26 @@ import (
 
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
-	"shop/internal/pkg"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
-	"github.com/lestrrat-go/jwx/jwk"
 	"go.uber.org/zap"
 )
 
 const (
-	defaultAccessExpiration = time.Hour * 24
-	maxPasswordLen          = 20
+	maxPasswordLen = 20
 )
 
 type Auth struct {
 	authRepo    port.AuthRepo
 	balanceRepo port.UserBalanceRepo
 	passHasher  port.PassHasher
+	secretRepo  port.SecretRepo
 
 	logger *zap.Logger
 
-	privateKey      *ecdsa.PrivateKey
-	publicKey       *ecdsa.PublicKey
-	jwkPublicKey    jwk.ECDSAPublicKey
-	jwtIssuer       string
-	signingAlgoName string
+	privateKey *ecdsa.PrivateKey
+	publicKey  *ecdsa.PublicKey
+	jwtIssuer  string
 }
 
 func NewAuth(
@@ -44,20 +39,11 @@ func NewAuth(
 	logger *zap.Logger,
 ) (*Auth, error) {
 	as := &Auth{
-		authRepo:        authRepo,
-		balanceRepo:     balanceRepo,
-		passHasher:      passHasher,
-		signingAlgoName: jwt.SigningMethodES512.Name,
-		logger:          logger.Named("authService"),
-	}
-
-	as.privateKey = secretRepo.PrivateKey()
-	as.publicKey = secretRepo.PublicKey()
-	as.jwtIssuer = secretRepo.JWTIssuer()
-
-	as.jwkPublicKey = jwk.NewECDSAPublicKey()
-	if err := as.jwkPublicKey.FromRaw(as.publicKey); err != nil {
-		panic(err)
+		authRepo:    authRepo,
+		balanceRepo: balanceRepo,
+		passHasher:  passHasher,
+		secretRepo:  secretRepo,
+		logger:      logger,
 	}
 
 	return as, nil
@@ -91,7 +77,7 @@ func (r *Auth) Auth(ctx context.Context, login entity.Login) (*entity.Token, err
 				return nil, fmt.Errorf("create user balance; %w", err)
 			}
 
-			return r.createToken(login.Username)
+			return r.secretRepo.CreateToken(login.Username)
 		}
 
 		return nil, fmt.Errorf("read password: %w", err)
@@ -101,37 +87,11 @@ func (r *Auth) Auth(ctx context.Context, login entity.Login) (*entity.Token, err
 		return nil, ErrInvalidPassword
 	}
 
-	return r.createToken(login.Username)
-}
-
-func (r *Auth) createToken(username string) (*entity.Token, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodES512,
-		jwt.MapClaims{
-			"jti": uuid.NewString(),
-			"iss": r.jwtIssuer,
-			"exp": time.Now().Add(defaultAccessExpiration).Unix(),
-			"uid": username,
-		},
-	)
-
-	accessToken, err := token.SignedString(r.privateKey)
-	if err != nil {
-		return nil, fmt.Errorf("jwt:s %w", err)
-	}
-
-	return pkg.PointerTo[entity.Token](entity.Token(accessToken)), nil
+	return r.secretRepo.CreateToken(login.Username)
 }
 
 func (r *Auth) AuthenticateWithAccessToken(token string) (string, bool, error) {
-	var mapClaims jwt.MapClaims
-
-	_, err := jwt.ParseWithClaims(token, &mapClaims, func(t *jwt.Token) (interface{}, error) {
-		if t.Method.Alg() != r.signingAlgoName {
-			return nil, ErrInvalidSigningAlgo
-		}
-
-		return r.publicKey, nil
-	})
+	mapClaims, err := r.secretRepo.ParseJWT(token)
 
 	var username string
 

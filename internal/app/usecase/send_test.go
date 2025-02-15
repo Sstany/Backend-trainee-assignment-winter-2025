@@ -1,122 +1,107 @@
 package usecase_test
 
-// import (
-// 	"context"
-// 	"errors"
-// 	"testing"
+import (
+	"context"
+	"errors"
+	"testing"
 
-// 	"github.com/golang/mock/gomock"
+	"github.com/golang/mock/gomock"
 
-// 	"shop/internal/adapter/password"
-// 	repo "shop/internal/adapter/repo/mock"
-// 	"shop/internal/app/entity"
-// 	"shop/internal/app/port"
-// 	"shop/internal/app/usecase"
-// )
+	repo "shop/internal/adapter/repo/mock"
+	"shop/internal/app/entity"
+	"shop/internal/app/port"
+	"shop/internal/app/usecase"
+)
 
-// func TestSend(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
+func TestSend(t *testing.T) {
+	ctrl := gomock.NewController(t)
 
-// 	defer ctrl.Finish()
+	defer ctrl.Finish()
 
-// 	authRepo := repo.NewMockAuthRepo(ctrl)
+	shopRepo := repo.NewMockShopRepo(ctrl)
+	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
+	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
+	transactionController := repo.NewMockTransactionController(ctrl)
+	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-// 	passHasher := password.NewMockPassHasher(ctrl)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
 
-// 	shopRepo := repo.NewMockShopRepo(ctrl)
-// 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
-// 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
-// 	transactionController := repo.NewMockTransactionController(ctrl)
-// 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
+	sendRequest := entity.SendCoinRequest{
+		Amount:   200,
+		FromUser: "test",
+		ToUser:   "test2",
+	}
 
-// 	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, userTransactionRepo)
+	ctx := context.Background()
+	tx := repo.NewMockTransaction(ctrl)
+	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 
-// 	sendRequest := entity.SendCoinRequest{
-// 		Amount:   200,
-// 		FromUser: "test",
-// 		ToUser:   "test2",
-// 	}
+	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(nil)
+	balanceRepo.EXPECT().ChangeUserBalance(tx, 200, "test2").Return(nil)
+	userTransactionRepo.EXPECT().SetUserTransaction(tx, sendRequest).Return(nil)
 
-// 	ctx := context.Background()
-// 	tx := repo.NewMockTransaction(ctrl)
-// 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
+	tx.EXPECT().Commit().Return(nil)
 
-// 	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(nil)
-// 	balanceRepo.EXPECT().ChangeUserBalance(tx, 200, "test2").Return(nil)
-// 	userTransactionRepo.EXPECT().SetUserTransaction(tx, sendRequest).Return(nil)
+	err := userUsecase.Send(ctx, sendRequest)
+	if err != nil {
+		t.Error(err)
+	}
+}
 
-// 	tx.EXPECT().Commit().Return(nil)
+func TestSendWithInsufficientBalance(t *testing.T) {
+	ctrl := gomock.NewController(t)
 
-// 	err := userUsecase.Send(ctx, sendRequest)
-// 	if err != nil {
-// 		t.Error(err)
-// 	}
-// }
+	shopRepo := repo.NewMockShopRepo(ctrl)
+	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
+	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
+	transactionController := repo.NewMockTransactionController(ctrl)
+	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-// func TestSendWithInsufficientBalance(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
 
-// 	defer ctrl.Finish()
+	sendRequest := entity.SendCoinRequest{
+		Amount:   200,
+		FromUser: "test",
+		ToUser:   "test2",
+	}
 
-// 	authRepo := repo.NewMockAuthRepo(ctrl)
+	ctx := context.Background()
+	tx := repo.NewMockTransaction(ctrl)
+	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 
-// 	passHasher := password.NewMockPassHasher(ctrl)
+	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(usecase.ErrInsufficientBalance)
 
-// 	shopRepo := repo.NewMockShopRepo(ctrl)
-// 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
-// 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
-// 	transactionController := repo.NewMockTransactionController(ctrl)
-// 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
+	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
 
-// 	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, userTransactionRepo)
+	err := userUsecase.Send(ctx, sendRequest)
+	if !errors.Is(err, usecase.ErrInsufficientBalance) {
+		t.Error(err)
+	}
+}
 
-// 	sendRequest := entity.SendCoinRequest{
-// 		Amount:   200,
-// 		FromUser: "test",
-// 		ToUser:   "test2",
-// 	}
+func TestSendWithNegativeAmount(t *testing.T) {
+	ctrl := gomock.NewController(t)
 
-// 	ctx := context.Background()
-// 	tx := repo.NewMockTransaction(ctrl)
-// 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
+	defer ctrl.Finish()
 
-// 	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(usecase.ErrInsufficientBalance)
+	shopRepo := repo.NewMockShopRepo(ctrl)
+	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
+	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
+	transactionController := repo.NewMockTransactionController(ctrl)
+	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-// 	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
 
-// 	err := userUsecase.Send(ctx, sendRequest)
-// 	if !errors.Is(err, usecase.ErrInsufficientBalance) {
-// 		t.Error(err)
-// 	}
-// }
+	sendRequest := entity.SendCoinRequest{
+		Amount:   -200,
+		FromUser: "test",
+		ToUser:   "test2",
+	}
 
-// func TestSendWithNegativeAmount(t *testing.T) {
-// 	ctrl := gomock.NewController(t)
+	ctx := context.Background()
 
-// 	defer ctrl.Finish()
-
-// 	authRepo := repo.NewMockAuthRepo(ctrl)
-
-// 	passHasher := password.NewMockPassHasher(ctrl)
-
-// 	shopRepo := repo.NewMockShopRepo(ctrl)
-// 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
-// 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
-// 	transactionController := repo.NewMockTransactionController(ctrl)
-// 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
-
-// 	userUsecase := usecase.NewUser(authRepo, shopRepo, balanceRepo, inventoryRepo, passHasher, transactionController, userTransactionRepo)
-
-// 	sendRequest := entity.SendCoinRequest{
-// 		Amount:   -200,
-// 		FromUser: "test",
-// 		ToUser:   "test2",
-// 	}
-
-// 	ctx := context.Background()
-
-// 	err := userUsecase.Send(ctx, sendRequest)
-// 	if !errors.Is(err, usecase.ErrWrongCoinAmount) {
-// 		t.Error(err)
-// 	}
-// }
+	err := userUsecase.Send(ctx, sendRequest)
+	if !errors.Is(err, usecase.ErrWrongCoinAmount) {
+		t.Error(err)
+	}
+}
