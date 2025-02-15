@@ -1,11 +1,25 @@
-FROM golang:1.22
+FROM golang:1.23.4-alpine AS builder
 
-WORKDIR ${GOPATH}/avito-shop/
-COPY . ${GOPATH}/avito-shop/
+WORKDIR /app
 
-RUN go build -o /build ./internal/cmd \
-    && go clean -cache -modcache
+COPY go.mod ./
+COPY go.sum ./
+
+RUN apk update && \
+    apk add build-base
+
+RUN go mod download
+
+COPY ./ ./
+
+RUN go build -o core /app/cmd/core/main.go
+
+FROM alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/core /app/core
 
 EXPOSE 8080
 
-CMD ["/build"]
+CMD [ "./core" ]

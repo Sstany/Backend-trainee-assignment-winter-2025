@@ -5,7 +5,6 @@
 package repo
 
 import (
-	ecdsa "crypto/ecdsa"
 	reflect "reflect"
 	entity "shop/internal/app/entity"
 
@@ -51,20 +50,6 @@ func (mr *MockSecretRepoMockRecorder) CreateToken(username interface{}) *gomock.
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateToken", reflect.TypeOf((*MockSecretRepo)(nil).CreateToken), username)
 }
 
-// JWTIssuer mocks base method.
-func (m *MockSecretRepo) JWTIssuer() string {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "JWTIssuer")
-	ret0, _ := ret[0].(string)
-	return ret0
-}
-
-// JWTIssuer indicates an expected call of JWTIssuer.
-func (mr *MockSecretRepoMockRecorder) JWTIssuer() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "JWTIssuer", reflect.TypeOf((*MockSecretRepo)(nil).JWTIssuer))
-}
-
 // ParseJWT mocks base method.
 func (m *MockSecretRepo) ParseJWT(token string) (jwt.MapClaims, error) {
 	m.ctrl.T.Helper()
@@ -78,32 +63,4 @@ func (m *MockSecretRepo) ParseJWT(token string) (jwt.MapClaims, error) {
 func (mr *MockSecretRepoMockRecorder) ParseJWT(token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseJWT", reflect.TypeOf((*MockSecretRepo)(nil).ParseJWT), token)
-}
-
-// PrivateKey mocks base method.
-func (m *MockSecretRepo) PrivateKey() *ecdsa.PrivateKey {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PrivateKey")
-	ret0, _ := ret[0].(*ecdsa.PrivateKey)
-	return ret0
-}
-
-// PrivateKey indicates an expected call of PrivateKey.
-func (mr *MockSecretRepoMockRecorder) PrivateKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PrivateKey", reflect.TypeOf((*MockSecretRepo)(nil).PrivateKey))
-}
-
-// PublicKey mocks base method.
-func (m *MockSecretRepo) PublicKey() *ecdsa.PublicKey {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "PublicKey")
-	ret0, _ := ret[0].(*ecdsa.PublicKey)
-	return ret0
-}
-
-// PublicKey indicates an expected call of PublicKey.
-func (mr *MockSecretRepoMockRecorder) PublicKey() *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PublicKey", reflect.TypeOf((*MockSecretRepo)(nil).PublicKey))
 }

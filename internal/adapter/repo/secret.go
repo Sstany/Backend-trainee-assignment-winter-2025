@@ -1,7 +1,8 @@
 package repo
 
 import (
-	"crypto/ecdsa"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
 	"errors"
@@ -24,45 +25,70 @@ var ErrInvalidSigningAlgo = errors.New("invalid signing algo")
 const defaultAccessExpiration = time.Hour * 24
 
 type Secret struct {
-	privateKey      *ecdsa.PrivateKey
-	publicKey       *ecdsa.PublicKey
+	privateKey      *rsa.PrivateKey
+	publicKey       *rsa.PublicKey
 	jwtIssuer       string
 	signingAlgoName string
 	logger          *zap.Logger
 }
 
-func (r *Secret) PrivateKey() *ecdsa.PrivateKey { return r.privateKey }
-func (r *Secret) PublicKey() *ecdsa.PublicKey   { return r.publicKey }
-func (r *Secret) JWTIssuer() string             { return r.jwtIssuer }
-
 func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *Secret {
-	logger = logger.Named("secret")
+	var key *rsa.PrivateKey
 
-	privateKey, err := os.ReadFile(jwtSigningKeyPath)
-	if err != nil {
-		logger.Error("read key failed", zap.Error(err))
-		panic(err)
-	}
+	info, err := os.Stat(jwtSigningKeyPath)
+	if os.IsNotExist(err) || info.IsDir() {
+		key, err = rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			logger.Error("generate key failed", zap.Error(err))
+			panic(err)
+		}
 
-	block, _ := pem.Decode(privateKey)
+		keyBytes := x509.MarshalPKCS1PrivateKey(key)
+		pemBlock := &pem.Block{
+			Type:  "RSA PRIVATE KEY",
+			Bytes: keyBytes,
+		}
 
-	key, err := x509.ParseECPrivateKey(block.Bytes)
-	if err != nil {
-		logger.Error("private key parse failed", zap.Error(err))
-		panic(err)
+		file, err := os.Create(jwtSigningKeyPath)
+		if err != nil {
+			logger.Error("create key file failed", zap.Error(err))
+			panic(err)
+		}
+
+		defer file.Close()
+		err = pem.Encode(file, pemBlock)
+		if err != nil {
+			logger.Error("encode key failed", zap.Error(err))
+			panic(err)
+		}
+
+	} else {
+		privateKey, err := os.ReadFile(jwtSigningKeyPath)
+		if err != nil {
+			logger.Error("read key failed", zap.Error(err))
+			panic(err)
+		}
+
+		block, _ := pem.Decode(privateKey)
+
+		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
+		if err != nil {
+			logger.Error("private key parse failed", zap.Error(err))
+			panic(err)
+		}
 	}
 
 	return &Secret{
 		privateKey:      key,
 		publicKey:       &key.PublicKey,
 		jwtIssuer:       jwtIssuer,
-		signingAlgoName: jwt.SigningMethodES512.Name,
+		signingAlgoName: jwt.SigningMethodRS256.Name,
 		logger:          logger,
 	}
 }
 
 func (r *Secret) CreateToken(username string) (*entity.Token, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodES512,
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256,
 		jwt.MapClaims{
 			"jti": uuid.NewString(),
 			"iss": r.jwtIssuer,
@@ -71,12 +97,12 @@ func (r *Secret) CreateToken(username string) (*entity.Token, error) {
 		},
 	)
 
-	accessToken, err := token.SignedString(r.PrivateKey())
+	accessToken, err := token.SignedString(r.privateKey)
 	if err != nil {
 		return nil, fmt.Errorf("jwt:s %w", err)
 	}
 
-	return pkg.PointerTo[entity.Token](entity.Token(accessToken)), nil
+	return pkg.PointerTo(entity.Token(accessToken)), nil
 }
 
 func (r *Secret) ParseJWT(token string) (jwt.MapClaims, error) {
@@ -87,7 +113,7 @@ func (r *Secret) ParseJWT(token string) (jwt.MapClaims, error) {
 			return nil, ErrInvalidSigningAlgo
 		}
 
-		return r.PublicKey(), nil
+		return r.publicKey, nil
 	})
 	if err != nil {
 		return nil, err

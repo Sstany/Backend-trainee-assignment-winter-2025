@@ -16,7 +16,6 @@ var _ port.UserBalanceRepo = (*Balance)(nil)
 const (
 	readBalance   = "SELECT balance FROM wallets WHERE username=$1"
 	changeBalance = "UPDATE wallets SET balance = balance + $1 WHERE username=$2"
-	changeBalanc  = "UPDATE wallets SET balance = balance+$1 WHERE username = (SELECT username FROM wallets WHERE username=$2)"
 	create        = "INSERT INTO wallets (username, balance) VALUES($1, $2)"
 )
 
