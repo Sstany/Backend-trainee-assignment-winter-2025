@@ -17,82 +17,27 @@ const (
 )
 
 type User struct {
-	authRepo              port.AuthRepo
 	shopRepo              port.ShopRepo
 	balanceRepo           port.UserBalanceRepo
 	inventoryRepo         port.UserInventoryRepo
-	passHasher            port.PassHasher
 	transactionController port.TransactionController
 	userTransactionRepo   port.UserTransactionRepo
-	//userInfoRepo          port.UserInfoPort
-	// transactionRepos
-	// inventoryRepo
 }
 
 func NewUser(
-	authRepo port.AuthRepo,
 	shopRepo port.ShopRepo,
 	balanceRepo port.UserBalanceRepo,
 	inventoryRepo port.UserInventoryRepo,
-	passHasher port.PassHasher,
 	transactionController port.TransactionController,
 	userTransactionRepo port.UserTransactionRepo,
-	//userInfoRepo port.UserInfoPort,
 ) *User {
 	return &User{
-		authRepo:              authRepo,
 		shopRepo:              shopRepo,
 		balanceRepo:           balanceRepo,
 		inventoryRepo:         inventoryRepo,
-		passHasher:            passHasher,
 		transactionController: transactionController,
 		userTransactionRepo:   userTransactionRepo,
-		//	userInfoRepo:          userInfoRepo,
 	}
-}
-
-func (r *User) Auth(ctx context.Context, login entity.Login) (*entity.Token, error) {
-	if len(login.Password) < minPasswordLen {
-		return nil, ErrUnsafePassword
-	}
-
-	if len(login.Password) > 20 {
-		return nil, ErrLongPassword
-	}
-
-	passHash, err := r.authRepo.ReadPassword(ctx, login.Username)
-	if err != nil {
-		if errors.Is(err, port.ErrNotFound) {
-			hash, err := r.passHasher.Hash(login.Password)
-			if err != nil {
-				return nil, fmt.Errorf("hash password: %w", err)
-			}
-
-			login.Password = hash
-
-			if err = r.authRepo.CreateUser(ctx, login); err != nil {
-				return nil, fmt.Errorf("create user: %w", err)
-			}
-
-			if err = r.balanceRepo.Create(ctx, login.Username, initCoins); err != nil {
-				return nil, fmt.Errorf("create user balance; %w", err)
-			}
-
-			// TODO: return jwt
-
-			return nil, nil
-		}
-
-		return nil, fmt.Errorf("read password: %w", err)
-	}
-
-	if passHash != "" && !r.passHasher.Compare(login.Password, passHash) {
-		return nil, ErrInvalidPassword
-	}
-
-	// TODO: create jwt with username here.
-
-	return nil, nil
 }
 
 func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {

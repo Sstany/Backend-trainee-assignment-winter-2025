@@ -48,20 +48,27 @@ func Run(cfg *config.Config) {
 
 	authRepo := repo.NewAuth(db, logger.Named("auth-repo"))
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
-	shopRepo := repo.NewShop(logger.Named("shop"))
-	balanceRepo := repo.NewBalance(db, logger.Named("balance"))
-	inventoryRepo := repo.NewInventory(db, logger.Named("inventory"))
+	secretRepo := repo.NewSecret(logger.Named("secret-repo"), cfg.SigningKeyPath, cfg.JWTIssuer)
+	shopRepo := repo.NewShop(logger.Named("shop-repo"))
+	balanceRepo := repo.NewBalance(db, logger.Named("balance-repo"))
+	inventoryRepo := repo.NewInventory(db, logger.Named("inventory-repo"))
 	transactionController := repo.NewTransactionSQL(db, logger.Named("transaction-ctrl"))
-	userTransactionRepo := repo.NewUserTransaction(db, logger)
+	userTransactionRepo := repo.NewUserTransaction(db, logger.Named("user-tranaction"))
 	userUsecase := usecase.NewUser(
-		authRepo,
 		shopRepo,
 		balanceRepo,
 		inventoryRepo,
-		passHasher,
 		transactionController,
 		userTransactionRepo,
 	)
 
-	handler.NewServer(logger.Named("http"), userUsecase, cfg.Address).Start()
+	authUsecase, err := usecase.NewAuth(
+		authRepo,
+		balanceRepo,
+		passHasher,
+		secretRepo,
+		logger.Named("auth"),
+	)
+
+	handler.NewServer(logger.Named("http"), userUsecase, authUsecase, cfg.Address).Start()
 }
