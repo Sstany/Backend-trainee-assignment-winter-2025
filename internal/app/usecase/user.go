@@ -57,6 +57,10 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 		if errors.Is(err, port.ErrInsufficientBalance) {
 			return ErrInsufficientBalance
 		}
+		if errors.Is(err, port.ErrReveicerNotExists) {
+			return ErrReveicerNotExists
+		}
+
 		return fmt.Errorf("change user balance: %w", err)
 	}
 

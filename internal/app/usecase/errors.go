@@ -14,4 +14,5 @@ var (
 
 	ErrInsufficientBalance = errors.New("not enought coins")
 	ErrWrongCoinAmount     = errors.New("coin amount <0")
+	ErrReveicerNotExists   = errors.New("receiver name not found")
 )

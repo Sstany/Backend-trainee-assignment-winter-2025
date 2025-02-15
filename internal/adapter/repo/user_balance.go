@@ -16,6 +16,7 @@ var _ port.UserBalanceRepo = (*Balance)(nil)
 const (
 	readBalance   = "SELECT balance FROM wallets WHERE username=$1"
 	changeBalance = "UPDATE wallets SET balance = balance + $1 WHERE username=$2"
+	changeBalanc  = "UPDATE wallets SET balance = balance+$1 WHERE username = (SELECT username FROM wallets WHERE username=$2)"
 	create        = "INSERT INTO wallets (username, balance) VALUES($1, $2)"
 )
 
@@ -46,7 +47,7 @@ func (r *Balance) GetUserBalance(ctx context.Context, name string) (int, error) 
 }
 
 func (r *Balance) ChangeUserBalance(tx port.Transaction, count int, name string) error {
-	_, err := tx.Exec(changeBalance, count, name)
+	res, err := tx.Exec(changeBalance, count, name)
 	if err != nil {
 		var pqErr *pq.Error
 		if errors.As(err, &pqErr) {
@@ -55,6 +56,9 @@ func (r *Balance) ChangeUserBalance(tx port.Transaction, count int, name string)
 			}
 		}
 		return err
+	}
+	if str, _ := res.RowsAffected(); str != 1 {
+		return port.ErrReveicerNotExists
 	}
 
 	return nil

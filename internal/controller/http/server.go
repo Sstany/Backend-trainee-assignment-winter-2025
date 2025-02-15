@@ -89,6 +89,9 @@ func (r *server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemReq
 		if errors.Is(err, usecase.ErrItemNotExists) {
 			return gen.GetApiBuyItem400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 		}
+		if errors.Is(err, usecase.ErrReveicerNotExists) {
+			return gen.GetApiBuyItem400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
 
 		return gen.GetApiBuyItem500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 	}

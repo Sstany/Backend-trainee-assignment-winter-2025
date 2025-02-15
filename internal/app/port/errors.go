@@ -6,4 +6,6 @@ var (
 	ErrNotFound = errors.New("user login not found")
 
 	ErrInsufficientBalance = errors.New("not enought coins")
+
+	ErrReveicerNotExists = errors.New("wrong receiver name")
 )
