@@ -3,11 +3,13 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -48,6 +50,13 @@ func NewUserTransaction(db *sql.DB, logger *zap.Logger) (*UserTransaction, error
 func (r *UserTransaction) SetUserTransaction(tx port.Transaction, sendCoin entity.SendCoinRequest) error {
 	_, err := tx.Exec(setUserTransaction, sendCoin.FromUser, sendCoin.ToUser, sendCoin.Amount)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Code == codeSerializationFailure {
+				return port.ErrTransactionFailure
+			}
+		}
+
 		return err
 	}
 

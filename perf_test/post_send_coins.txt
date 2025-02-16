@@ -1,0 +1,4 @@
+{
+  "toUser": "user",
+  "amount": 1
+}

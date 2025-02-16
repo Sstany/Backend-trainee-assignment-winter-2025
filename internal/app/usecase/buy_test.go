@@ -107,7 +107,7 @@ func TestWithInsufficientBalance(t *testing.T) {
 	shopRepo.EXPECT().GetItemPrice("hoody").Return(300, true)
 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 	balanceRepo.EXPECT().ChangeUserBalance(tx, -300, "test").Return(port.ErrInsufficientBalance)
-	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
+	tx.EXPECT().Rollback().Return(nil)
 
 	err = userUsecase.Buy(ctx, itemRequest)
 	if !errors.Is(err, usecase.ErrInsufficientBalance) {

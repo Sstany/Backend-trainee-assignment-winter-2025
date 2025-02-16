@@ -80,7 +80,7 @@ func TestSendWithInsufficientBalance(t *testing.T) {
 
 	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(port.ErrInsufficientBalance)
 
-	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
+	tx.EXPECT().Rollback().Return(nil)
 
 	err = userUsecase.Send(ctx, sendRequest)
 	if !errors.Is(err, usecase.ErrInsufficientBalance) {

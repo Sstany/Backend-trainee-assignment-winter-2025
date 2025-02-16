@@ -14,6 +14,7 @@ import (
 )
 
 const (
+	minPasswordLen = 6
 	maxPasswordLen = 20
 )
 

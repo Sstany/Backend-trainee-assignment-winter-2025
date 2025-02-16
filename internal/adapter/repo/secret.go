@@ -19,8 +19,6 @@ var _ port.SecretRepo = (*Secret)(nil)
 
 var ErrInvalidSigningAlgo = errors.New("invalid signing algo")
 
-const defaultBits = 2048
-
 const defaultAccessExpiration = time.Hour * 24
 
 type Secret struct {

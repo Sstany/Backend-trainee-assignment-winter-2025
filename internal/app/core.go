@@ -59,7 +59,11 @@ func Run(cfg *config.Config) {
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
 	secretRepo := repo.NewSecret(logger.Named("secret-repo"), cfg.SigningKeyPath, cfg.JWTIssuer)
 	shopRepo := repo.NewShop(logger.Named("shop-repo"))
-	balanceRepo := repo.NewBalance(db, logger.Named("balance-repo"))
+
+	balanceRepo, err := repo.NewBalance(db, logger.Named("balance-repo"))
+	if err != nil {
+		panic(err)
+	}
 
 	inventoryRepo, err := repo.NewInventory(db, logger.Named("inventory-repo"))
 	if err != nil {

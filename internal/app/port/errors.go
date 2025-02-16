@@ -10,4 +10,6 @@ var (
 	ErrInsufficientBalance = errors.New("not enought coins")
 
 	ErrReveicerNotExists = errors.New("wrong receiver name")
+
+	ErrTransactionFailure = errors.New("transaction failure")
 )

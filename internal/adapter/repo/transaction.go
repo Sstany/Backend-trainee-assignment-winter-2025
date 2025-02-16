@@ -22,6 +22,7 @@ func NewTransactionSQL(db *sql.DB, logger *zap.Logger) *TransactionSQL {
 		logger: logger,
 	}
 }
+
 func (r *TransactionSQL) BeginTx(ctx context.Context) (port.Transaction, error) {
 	tx, err := r.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	if err != nil {

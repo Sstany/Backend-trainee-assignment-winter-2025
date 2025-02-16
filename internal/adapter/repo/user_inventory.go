@@ -3,8 +3,10 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"shop/internal/app/entity"
@@ -17,6 +19,8 @@ const (
 	addItem  = "INSERT INTO inventory (username, item) VALUES($1, $2)"
 	getItems = "SELECT item, COUNT(*) AS count FROM inventory item WHERE username=$1 GROUP BY item"
 )
+
+const codeSerializationFailure = "40001"
 
 type Inventory struct {
 	db           *sql.DB
@@ -40,6 +44,13 @@ func NewInventory(db *sql.DB, logger *zap.Logger) (*Inventory, error) {
 func (r *Inventory) AddItem(tx port.Transaction, username string, item string) error {
 	_, err := tx.Exec(addItem, username, item)
 	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Code == codeSerializationFailure {
+				return port.ErrTransactionFailure
+			}
+		}
+
 		return err
 	}
 
