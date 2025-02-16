@@ -12,7 +12,8 @@ var (
 
 	ErrItemNotExists = errors.New("item not exists")
 
-	ErrInsufficientBalance = errors.New("not enought coins")
-	ErrWrongCoinAmount     = errors.New("coin amount <0")
-	ErrReveicerNotExists   = errors.New("receiver name not found")
+	ErrInsufficientBalance      = errors.New("not enought coins")
+	ErrWrongCoinAmount          = errors.New("coin amount <= 0")
+	ErrReveicerNotExists        = errors.New("receiver name not found")
+	ErrCannotTransferToYourself = errors.New("cannot transfer to yourself")
 )

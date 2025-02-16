@@ -94,6 +94,10 @@ func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
 		return ErrWrongCoinAmount
 	}
 
+	if sendReq.FromUser == sendReq.ToUser {
+		return ErrCannotTransferToYourself
+	}
+
 	tx, err := r.transactionController.BeginTx(ctx)
 	if err != nil {
 		return err

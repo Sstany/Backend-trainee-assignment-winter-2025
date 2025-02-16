@@ -255,10 +255,9 @@ func (r *Server) PostApiSendCoin(
 
 	err := r.userUsecase.Send(ctx, req)
 	if err != nil {
-		if errors.Is(err, usecase.ErrWrongCoinAmount) {
-			return gen.PostApiSendCoin400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
-		}
-		if errors.Is(err, usecase.ErrInsufficientBalance) {
+		if errors.Is(err, usecase.ErrWrongCoinAmount) ||
+			errors.Is(err, usecase.ErrInsufficientBalance) ||
+			errors.Is(err, usecase.ErrCannotTransferToYourself) {
 			return gen.PostApiSendCoin400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 		}
 
