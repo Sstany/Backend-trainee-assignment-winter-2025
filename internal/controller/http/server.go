@@ -256,6 +256,9 @@ func (r *Server) PostApiSendCoin(
 		if errors.Is(err, usecase.ErrWrongCoinAmount) {
 			return gen.PostApiSendCoin400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 		}
+		if errors.Is(err, usecase.ErrInsufficientBalance) {
+			return gen.PostApiSendCoin400JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
+		}
 
 		return gen.PostApiSendCoin500JSONResponse{Errors: pkg.PointerTo(err.Error())}, nil
 	}

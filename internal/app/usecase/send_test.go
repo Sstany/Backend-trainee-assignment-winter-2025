@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"go.uber.org/zap"
 
 	repo "shop/internal/adapter/repo/mock"
 	"shop/internal/app/entity"
@@ -23,8 +24,12 @@ func TestSend(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, logger)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   200,
@@ -42,7 +47,7 @@ func TestSend(t *testing.T) {
 
 	tx.EXPECT().Commit().Return(nil)
 
-	err := userUsecase.Send(ctx, sendRequest)
+	err = userUsecase.Send(ctx, sendRequest)
 	if err != nil {
 		t.Error(err)
 	}
@@ -56,8 +61,12 @@ func TestSendWithInsufficientBalance(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, logger)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   200,
@@ -69,11 +78,11 @@ func TestSendWithInsufficientBalance(t *testing.T) {
 	tx := repo.NewMockTransaction(ctrl)
 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 
-	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(usecase.ErrInsufficientBalance)
+	balanceRepo.EXPECT().ChangeUserBalance(tx, -200, "test").Return(port.ErrInsufficientBalance)
 
 	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
 
-	err := userUsecase.Send(ctx, sendRequest)
+	err = userUsecase.Send(ctx, sendRequest)
 	if !errors.Is(err, usecase.ErrInsufficientBalance) {
 		t.Error(err)
 	}
@@ -89,8 +98,12 @@ func TestSendWithNegativeAmount(t *testing.T) {
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, logger)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   -200,
@@ -100,7 +113,7 @@ func TestSendWithNegativeAmount(t *testing.T) {
 
 	ctx := context.Background()
 
-	err := userUsecase.Send(ctx, sendRequest)
+	err = userUsecase.Send(ctx, sendRequest)
 	if !errors.Is(err, usecase.ErrWrongCoinAmount) {
 		t.Error(err)
 	}

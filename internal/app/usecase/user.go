@@ -58,14 +58,15 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 
 	err = r.balanceRepo.ChangeUserBalance(tx, -price, itemRequest.Username)
 	if err != nil {
-		err = tx.Rollback()
-		if err != nil {
+		errR := tx.Rollback()
+		if errR != nil {
 			r.logger.Error("transaction failed", zap.Error(err))
 		}
 
 		if errors.Is(err, port.ErrInsufficientBalance) {
 			return ErrInsufficientBalance
 		}
+
 		if errors.Is(err, port.ErrReveicerNotExists) {
 			return ErrReveicerNotExists
 		}
@@ -75,8 +76,8 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 
 	err = r.inventoryRepo.AddItem(tx, itemRequest.Username, itemRequest.Item)
 	if err != nil {
-		err = tx.Rollback()
-		if err != nil {
+		errR := tx.Rollback()
+		if errR != nil {
 			r.logger.Error("transaction failed", zap.Error(err))
 		}
 	}
@@ -100,18 +101,22 @@ func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
 
 	err = r.balanceRepo.ChangeUserBalance(tx, -(sendReq.Amount), sendReq.FromUser)
 	if err != nil {
-		err = tx.Rollback()
-		if err != nil {
+		errRoll := tx.Rollback()
+		if errRoll != nil {
 			r.logger.Error("transaction failed", zap.Error(err))
 		}
 
-		return fmt.Errorf("change user balance: %w", err)
+		if errors.Is(err, port.ErrInsufficientBalance) {
+			return ErrInsufficientBalance
+		}
+
+		return fmt.Errorf("change user balance failed")
 	}
 
 	err = r.balanceRepo.ChangeUserBalance(tx, sendReq.Amount, sendReq.ToUser)
 	if err != nil {
-		err = tx.Rollback()
-		if err != nil {
+		errR := tx.Rollback()
+		if errR != nil {
 			r.logger.Error("transaction failed", zap.Error(err))
 		}
 
@@ -120,8 +125,8 @@ func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
 
 	err = r.userTransactionRepo.SetUserTransaction(tx, sendReq)
 	if err != nil {
-		err = tx.Rollback()
-		if err != nil {
+		errR := tx.Rollback()
+		if errR != nil {
 			r.logger.Error("transaction failed", zap.Error(err))
 		}
 	}

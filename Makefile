@@ -2,6 +2,10 @@
 lint:
 	golangci-lint --new-from-rev=main run
 
+.PHONY: tests
+tests:
+	go test ./...
+
 .PHONY: coverage
 coverage:
 	go test -cover ./internal/app/usecase

@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/golang/mock/gomock"
+	"go.uber.org/zap"
 
 	repo "shop/internal/adapter/repo/mock"
 
@@ -24,8 +25,12 @@ func TestBuy(t *testing.T) {
 
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, logger)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",
@@ -40,7 +45,7 @@ func TestBuy(t *testing.T) {
 	inventoryRepo.EXPECT().AddItem(tx, "test", "hoody").Return(nil)
 	tx.EXPECT().Commit().Return(nil)
 
-	err := userUsecase.Buy(ctx, itemRequest)
+	err = userUsecase.Buy(ctx, itemRequest)
 	if err != nil {
 		t.Error(err)
 	}
@@ -55,8 +60,12 @@ func TestBuyNotExistItem(t *testing.T) {
 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, logger)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",
@@ -66,7 +75,7 @@ func TestBuyNotExistItem(t *testing.T) {
 
 	shopRepo.EXPECT().GetItemPrice("something").Return(0, false)
 
-	err := userUsecase.Buy(ctx, itemRequest)
+	err = userUsecase.Buy(ctx, itemRequest)
 	if !errors.Is(err, usecase.ErrItemNotExists) {
 		t.Error(err)
 	}
@@ -81,8 +90,12 @@ func TestWithInsufficientBalance(t *testing.T) {
 	balanceRepo := repo.NewMockUserBalanceRepo(ctrl)
 	inventoryRepo := repo.NewMockUserInventoryRepo(ctrl)
 	transactionController := repo.NewMockTransactionController(ctrl)
+	logger, err := zap.NewDevelopment()
+	if err != nil {
+		t.Error(err)
+	}
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, nil)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, nil, logger)
 
 	itemRequest := entity.ItemRequest{
 		Username: "test",
@@ -96,7 +109,7 @@ func TestWithInsufficientBalance(t *testing.T) {
 	balanceRepo.EXPECT().ChangeUserBalance(tx, -300, "test").Return(port.ErrInsufficientBalance)
 	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)
 
-	err := userUsecase.Buy(ctx, itemRequest)
+	err = userUsecase.Buy(ctx, itemRequest)
 	if !errors.Is(err, usecase.ErrInsufficientBalance) {
 		t.Error(err)
 	}
