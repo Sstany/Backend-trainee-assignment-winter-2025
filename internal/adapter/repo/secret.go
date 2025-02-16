@@ -2,9 +2,6 @@ package repo
 
 import (
 	"crypto/rand"
-	"crypto/rsa"
-	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"os"
@@ -15,11 +12,11 @@ import (
 	"shop/internal/pkg"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
 var _ port.SecretRepo = (*Secret)(nil)
+
 var ErrInvalidSigningAlgo = errors.New("invalid signing algo")
 
 const defaultBits = 2048
@@ -27,28 +24,20 @@ const defaultBits = 2048
 const defaultAccessExpiration = time.Hour * 24
 
 type Secret struct {
-	privateKey      *rsa.PrivateKey
-	publicKey       *rsa.PublicKey
-	jwtIssuer       string
+	secretKey       []byte
 	signingAlgoName string
 	logger          *zap.Logger
 }
 
 func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *Secret {
-	var key *rsa.PrivateKey
+	var key []byte
 
 	info, err := os.Stat(jwtSigningKeyPath)
 	if os.IsNotExist(err) || info.IsDir() {
-		key, err = rsa.GenerateKey(rand.Reader, defaultBits)
+		key, err = generateHMACKey()
 		if err != nil {
 			logger.Error("generate key failed", zap.Error(err))
 			panic(err)
-		}
-
-		keyBytes := x509.MarshalPKCS1PrivateKey(key)
-		pemBlock := &pem.Block{
-			Type:  "RSA PRIVATE KEY",
-			Bytes: keyBytes,
 		}
 
 		//nolint:govet // ok.
@@ -59,50 +48,35 @@ func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *
 		}
 
 		defer file.Close()
-		err = pem.Encode(file, pemBlock)
-		if err != nil {
-			logger.Error("encode key failed", zap.Error(err))
-			panic(err)
-		}
 	} else {
 		//nolint:govet // ok.
-		privateKey, err := os.ReadFile(jwtSigningKeyPath)
+		fileKey, err := os.ReadFile(jwtSigningKeyPath)
 		if err != nil {
 			logger.Error("read key failed", zap.Error(err))
 			panic(err)
 		}
 
-		block, _ := pem.Decode(privateKey)
-
-		key, err = x509.ParsePKCS1PrivateKey(block.Bytes)
-		if err != nil {
-			logger.Error("private key parse failed", zap.Error(err))
-			panic(err)
-		}
+		key = fileKey
 	}
 
 	return &Secret{
-		privateKey:      key,
-		publicKey:       &key.PublicKey,
-		jwtIssuer:       jwtIssuer,
-		signingAlgoName: jwt.SigningMethodRS256.Name,
+		secretKey:       key,
+		signingAlgoName: jwt.SigningMethodHS256.Name,
 		logger:          logger,
 	}
 }
 
 func (r *Secret) CreateToken(username string) (*entity.Token, error) {
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256,
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256,
 		jwt.MapClaims{
-			"jti": uuid.NewString(),
-			"iss": r.jwtIssuer,
 			"exp": time.Now().Add(defaultAccessExpiration).Unix(),
 			"uid": username,
 		},
 	)
 
-	accessToken, err := token.SignedString(r.privateKey)
+	accessToken, err := token.SignedString(r.secretKey)
 	if err != nil {
-		return nil, fmt.Errorf("jwt:s %w", err)
+		return nil, fmt.Errorf("jwt: %w", err)
 	}
 
 	return pkg.PointerTo(entity.Token(accessToken)), nil
@@ -116,10 +90,19 @@ func (r *Secret) ParseJWT(token string) (jwt.MapClaims, error) {
 			return nil, ErrInvalidSigningAlgo
 		}
 
-		return r.publicKey, nil
+		return r.secretKey, nil
 	})
 	if err != nil {
 		return nil, err
 	}
 	return mapClaims, nil
+}
+
+func generateHMACKey() ([]byte, error) {
+	key := make([]byte, 32) // 256-bit key
+	_, err := rand.Read(key)
+	if err != nil {
+		return nil, err
+	}
+	return key, nil
 }

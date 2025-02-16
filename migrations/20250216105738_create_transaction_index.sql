@@ -7,5 +7,4 @@ ON user_transactions(user_from, user_to);
 -- +goose Down
 -- +goose StatementBegin
 DROP INDEX IF EXISTS index_user
-ON user_transactions(user_from, user_to)
 -- +goose StatementEnd

@@ -4,7 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 
 	"shop/internal/app/entity"
@@ -18,22 +20,42 @@ const (
 	createUser             = "INSERT INTO users (username, password) VALUES ($1, $2)"
 )
 
+const codeUniqueViolation = "23505"
+
 type Auth struct {
-	db     *sql.DB
-	logger *zap.Logger
+	db                         *sql.DB
+	stmtReadPasswordByUsername *sql.Stmt
+	stmtCreateUser             *sql.Stmt
+	logger                     *zap.Logger
 }
 
-func NewAuth(db *sql.DB, logger *zap.Logger) *Auth {
-	return &Auth{
-		db:     db,
-		logger: logger,
+func NewAuth(db *sql.DB, logger *zap.Logger) (*Auth, error) {
+	readPassStmt, err := db.Prepare(readPasswordByUsername)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
 	}
+
+	createUserStmt, err := db.Prepare(createUser)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare statement: %w", err)
+	}
+
+	return &Auth{
+		db:                         db,
+		stmtReadPasswordByUsername: readPassStmt,
+		stmtCreateUser:             createUserStmt,
+		logger:                     logger,
+	}, nil
 }
 
 func (r *Auth) ReadPassword(ctx context.Context, username string) (string, error) {
 	var passHash string
 
-	if err := r.db.QueryRowContext(ctx, readPasswordByUsername, username).Scan(&passHash); err != nil {
+	err := r.stmtReadPasswordByUsername.QueryRowContext(
+		ctx,
+		username,
+	).Scan(&passHash)
+	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return "", port.ErrNotFound
 		}
@@ -45,6 +67,16 @@ func (r *Auth) ReadPassword(ctx context.Context, username string) (string, error
 }
 
 func (r *Auth) CreateUser(ctx context.Context, login entity.Login) error {
-	_, err := r.db.ExecContext(ctx, createUser, login.Username, login.Password)
-	return err
+	_, err := r.stmtCreateUser.ExecContext(ctx, login.Username, login.Password)
+	if err != nil {
+		var pqErr *pq.Error
+		if errors.As(err, &pqErr) {
+			if pqErr.Code == codeUniqueViolation {
+				return port.ErrAlreadyRegistred
+			}
+		}
+		return err
+	}
+
+	return nil
 }

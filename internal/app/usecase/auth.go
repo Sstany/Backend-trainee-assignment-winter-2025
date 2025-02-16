@@ -66,6 +66,11 @@ func (r *Auth) Auth(ctx context.Context, login entity.Login) (*entity.Token, err
 			login.Password = hash
 
 			if err = r.authRepo.CreateUser(ctx, login); err != nil {
+				if errors.Is(err, port.ErrAlreadyRegistred) {
+					r.logger.Info("retry auth for alredy registred user", zap.Any("username", login.Username))
+					return r.Auth(ctx, login)
+				}
+
 				return nil, fmt.Errorf("create user: %w", err)
 			}
 

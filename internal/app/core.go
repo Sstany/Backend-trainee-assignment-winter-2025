@@ -2,6 +2,7 @@ package app
 
 import (
 	"database/sql"
+	"time"
 
 	_ "github.com/lib/pq" // Postgres driver.
 	"go.uber.org/zap"
@@ -38,6 +39,10 @@ func Run(cfg *config.Config) {
 		panic(err)
 	}
 
+	db.SetMaxOpenConns(25)
+	db.SetMaxIdleConns(10)
+	db.SetConnMaxLifetime(5 * time.Minute)
+
 	logger.Info("start migration")
 
 	if err = repo.Migrate(db, cfg.Migrations); err != nil {
@@ -46,7 +51,11 @@ func Run(cfg *config.Config) {
 
 	logger.Info("start api", zap.String("apiVersion", "v1"))
 
-	authRepo := repo.NewAuth(db, logger.Named("auth-repo"))
+	authRepo, err := repo.NewAuth(db, logger.Named("auth-repo"))
+	if err != nil {
+		panic(err)
+	}
+
 	passHasher := password.NewHasherBcrypt(logger.Named("pass-hasher"))
 	secretRepo := repo.NewSecret(logger.Named("secret-repo"), cfg.SigningKeyPath, cfg.JWTIssuer)
 	shopRepo := repo.NewShop(logger.Named("shop-repo"))

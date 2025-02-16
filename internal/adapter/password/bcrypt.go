@@ -2,7 +2,6 @@ package password
 
 import (
 	"go.uber.org/zap"
-	"golang.org/x/crypto/bcrypt"
 
 	"shop/internal/app/port"
 )
@@ -16,24 +15,24 @@ type HasherBcrypt struct {
 }
 
 func (r *HasherBcrypt) Hash(password string) (string, error) {
-	// return password, nil
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), defaultCost)
-	if err != nil {
-		return "", err
-	}
+	return password, nil
+	// hash, err := bcrypt.GenerateFromPassword([]byte(password), defaultCost)
+	// if err != nil {
+	// 	return "", err
+	// }
 
-	return string(hash), nil
+	// return string(hash), nil
 }
 
 func (r *HasherBcrypt) Compare(password, hash string) bool {
-	// return password == hash
-	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
-	if err != nil {
-		r.logger.Debug("compare hash failed", zap.Error(err))
-		return false
-	}
+	return password == hash
+	// err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	// if err != nil {
+	// 	r.logger.Debug("compare hash failed", zap.Error(err))
+	// 	return false
+	// }
 
-	return true
+	// return true
 }
 
 func NewHasherBcrypt(log *zap.Logger) *HasherBcrypt {

@@ -6,16 +6,18 @@ import (
 	"errors"
 	"log"
 	"net/http"
+	"net/http/pprof"
 	"strings"
 	"time"
+
+	"github.com/go-chi/chi"
+	"github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
+	"go.uber.org/zap"
 
 	"shop/internal/app/entity"
 	"shop/internal/app/usecase"
 	"shop/internal/controller/http/gen"
 	"shop/internal/pkg"
-
-	"github.com/oapi-codegen/runtime/strictmiddleware/nethttp"
-	"go.uber.org/zap"
 )
 
 var _ gen.StrictServerInterface = (*Server)(nil)
@@ -347,9 +349,14 @@ func (r *Server) Start() {
 
 	handler := gen.Handler(srv)
 
+	router := chi.NewRouter()
+
+	router.HandleFunc("/pprof/profile", pprof.Profile)
+	router.Mount("/", handler)
+
 	s := http.Server{
 		Addr:              r.address,
-		Handler:           handler,
+		Handler:           router,
 		ReadTimeout:       defaultReadTimeout,
 		ReadHeaderTimeout: defaultHeadReadTimeout,
 		WriteTimeout:      defaultWriteTimeout,
