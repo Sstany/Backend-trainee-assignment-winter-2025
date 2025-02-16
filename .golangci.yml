@@ -340,6 +340,11 @@ issues:
   # Default: 3
   max-same-issues: 50
 
+  exclude-dirs:
+    - pkg/client
+    - internal/controller/http/gen
+    - internal/adapter/repo/mock
+
   exclude-rules:
     - source: "(noinspection|TODO)"
       linters: [ godot ]
