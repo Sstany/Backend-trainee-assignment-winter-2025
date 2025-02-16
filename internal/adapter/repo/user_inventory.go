@@ -19,15 +19,22 @@ const (
 )
 
 type Inventory struct {
-	db     *sql.DB
-	logger *zap.Logger
+	db           *sql.DB
+	stmtGetItems *sql.Stmt
+	logger       *zap.Logger
 }
 
-func NewInventory(db *sql.DB, logger *zap.Logger) *Inventory {
-	return &Inventory{
-		db:     db,
-		logger: logger,
+func NewInventory(db *sql.DB, logger *zap.Logger) (*Inventory, error) {
+	getItemsStmt, err := db.Prepare(getItems)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare getItems statement: %w", err)
 	}
+
+	return &Inventory{
+		db:           db,
+		stmtGetItems: getItemsStmt,
+		logger:       logger,
+	}, nil
 }
 
 func (r *Inventory) AddItem(tx port.Transaction, username string, item string) error {
@@ -40,7 +47,7 @@ func (r *Inventory) AddItem(tx port.Transaction, username string, item string) e
 }
 
 func (r *Inventory) Get(ctx context.Context, username string) ([]entity.Inventory, error) {
-	rows, err := r.db.QueryContext(ctx, getItems, username)
+	rows, err := r.stmtGetItems.QueryContext(ctx, username)
 	if err != nil {
 		return nil, err
 	}

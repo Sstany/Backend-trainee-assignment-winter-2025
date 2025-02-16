@@ -3,6 +3,7 @@ package repo
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
@@ -19,15 +20,29 @@ const (
 )
 
 type UserTransaction struct {
-	db     *sql.DB
-	logger *zap.Logger
+	db              *sql.DB
+	stmtGetRecieved *sql.Stmt
+	stmtGetSent     *sql.Stmt
+	logger          *zap.Logger
 }
 
-func NewUserTransaction(db *sql.DB, logger *zap.Logger) *UserTransaction {
-	return &UserTransaction{
-		db:     db,
-		logger: logger,
+func NewUserTransaction(db *sql.DB, logger *zap.Logger) (*UserTransaction, error) {
+	getRecievedStmt, err := db.Prepare(getRecieved)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare getRecieved statement: %w", err)
 	}
+
+	getSentStmt, err := db.Prepare(getSent)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare getSent statement: %w", err)
+	}
+
+	return &UserTransaction{
+		db:              db,
+		stmtGetRecieved: getRecievedStmt,
+		stmtGetSent:     getSentStmt,
+		logger:          logger,
+	}, nil
 }
 
 func (r *UserTransaction) SetUserTransaction(tx port.Transaction, sendCoin entity.SendCoinRequest) error {
@@ -40,7 +55,7 @@ func (r *UserTransaction) SetUserTransaction(tx port.Transaction, sendCoin entit
 }
 
 func (r *UserTransaction) GetRecievedOperations(ctx context.Context, username string) ([]entity.Received, error) {
-	rows, err := r.db.QueryContext(ctx, getRecieved, username)
+	rows, err := r.stmtGetRecieved.QueryContext(ctx, username)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +83,7 @@ func (r *UserTransaction) GetRecievedOperations(ctx context.Context, username st
 }
 
 func (r *UserTransaction) GetSentOperations(ctx context.Context, username string) ([]entity.Sent, error) {
-	rows, err := r.db.QueryContext(ctx, getSent, username)
+	rows, err := r.stmtGetSent.QueryContext(ctx, username)
 	if err != nil {
 		return nil, err
 	}

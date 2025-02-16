@@ -60,9 +60,19 @@ func Run(cfg *config.Config) {
 	secretRepo := repo.NewSecret(logger.Named("secret-repo"), cfg.SigningKeyPath, cfg.JWTIssuer)
 	shopRepo := repo.NewShop(logger.Named("shop-repo"))
 	balanceRepo := repo.NewBalance(db, logger.Named("balance-repo"))
-	inventoryRepo := repo.NewInventory(db, logger.Named("inventory-repo"))
+
+	inventoryRepo, err := repo.NewInventory(db, logger.Named("inventory-repo"))
+	if err != nil {
+		panic(err)
+	}
+
 	transactionController := repo.NewTransactionSQL(db, logger.Named("transaction-ctrl"))
-	userTransactionRepo := repo.NewUserTransaction(db, logger.Named("user-tranaction"))
+
+	userTransactionRepo, err := repo.NewUserTransaction(db, logger.Named("user-tranaction"))
+	if err != nil {
+		panic(err)
+	}
+
 	userUsecase := usecase.NewUser(
 		shopRepo,
 		balanceRepo,
