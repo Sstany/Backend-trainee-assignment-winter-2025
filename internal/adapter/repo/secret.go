@@ -22,7 +22,7 @@ import (
 var _ port.SecretRepo = (*Secret)(nil)
 var ErrInvalidSigningAlgo = errors.New("invalid signing algo")
 
-const defaultAccessExpiration = time.Hour * 24
+const defaultAccessExpiration = time.Hour * 24 * 100
 
 type Secret struct {
 	privateKey      *rsa.PrivateKey

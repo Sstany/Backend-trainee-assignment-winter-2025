@@ -4,4 +4,16 @@ lint:
 
 .PHONY: coverage
 coverage:
-	go test -cover ./... 
+	go test -cover ./internal/app/usecase
+
+.PHONY: gen-coverage
+gen-coverage:
+	go test -cover ./internal/app/usecase -coverpkg=./internal/app/usecase -coverprofile ./coverage.out
+
+.PHONY: show-coverage
+show-coverage:
+	go tool cover -func ./coverage.out
+
+.PHONY: generate
+generate:
+	go generate ./...

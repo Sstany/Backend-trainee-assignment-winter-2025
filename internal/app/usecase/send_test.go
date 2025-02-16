@@ -24,7 +24,7 @@ func TestSend(t *testing.T) {
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   200,
@@ -57,7 +57,7 @@ func TestSendWithInsufficientBalance(t *testing.T) {
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   200,
@@ -90,7 +90,7 @@ func TestSendWithNegativeAmount(t *testing.T) {
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
 
 	sendRequest := entity.SendCoinRequest{
 		Amount:   -200,

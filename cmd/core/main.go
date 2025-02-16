@@ -9,7 +9,7 @@ import (
 	"shop/migrations"
 )
 
-const jwtSigningKeyPath = "/keys/jwt-signing-key"
+const defaultJWTSigningKeyPath = "/keys/jwt-signing-key"
 
 func main() {
 	logLevel := config.DebugLevel
@@ -20,6 +20,11 @@ func main() {
 	dbPassword := os.Getenv("DATABASE_PASSWORD")
 	dbUser := os.Getenv("DATABASE_USER")
 	dbPort := os.Getenv("DATABASE_PORT")
+	jwtSigningKeyPath := os.Getenv("JWT_SIGNING_KEY_PATH")
+
+	if jwtSigningKeyPath == "" {
+		jwtSigningKeyPath = defaultJWTSigningKeyPath
+	}
 
 	connStr := fmt.Sprintf("host=%s port=%s user=%s "+
 		"password=%s dbname=%s sslmode=disable",

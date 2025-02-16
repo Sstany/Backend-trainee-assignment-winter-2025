@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"go.uber.org/zap"
+
 	"shop/internal/app/entity"
 	"shop/internal/app/port"
 )
@@ -22,6 +24,7 @@ type User struct {
 	inventoryRepo         port.UserInventoryRepo
 	transactionController port.TransactionController
 	userTransactionRepo   port.UserTransactionRepo
+	logger                *zap.Logger
 }
 
 func NewUser(
@@ -30,6 +33,7 @@ func NewUser(
 	inventoryRepo port.UserInventoryRepo,
 	transactionController port.TransactionController,
 	userTransactionRepo port.UserTransactionRepo,
+	logger *zap.Logger,
 ) *User {
 	return &User{
 		shopRepo:              shopRepo,
@@ -37,6 +41,7 @@ func NewUser(
 		inventoryRepo:         inventoryRepo,
 		transactionController: transactionController,
 		userTransactionRepo:   userTransactionRepo,
+		logger:                logger,
 	}
 }
 
@@ -53,7 +58,11 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 
 	err = r.balanceRepo.ChangeUserBalance(tx, -price, itemRequest.Username)
 	if err != nil {
-		tx.Rollback()
+		err := tx.Rollback()
+		if err != nil {
+			r.logger.Error("transaction failed", zap.Error(err))
+		}
+
 		if errors.Is(err, port.ErrInsufficientBalance) {
 			return ErrInsufficientBalance
 		}
@@ -66,8 +75,10 @@ func (r *User) Buy(ctx context.Context, itemRequest entity.ItemRequest) error {
 
 	err = r.inventoryRepo.AddItem(tx, itemRequest.Username, itemRequest.Item)
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("add item to user: %w", err)
+		err := tx.Rollback()
+		if err != nil {
+			r.logger.Error("transaction failed", zap.Error(err))
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -89,23 +100,30 @@ func (r *User) Send(ctx context.Context, sendReq entity.SendCoinRequest) error {
 
 	err = r.balanceRepo.ChangeUserBalance(tx, -(sendReq.Amount), sendReq.FromUser)
 	if err != nil {
-		tx.Rollback()
-		if errors.Is(err, port.ErrInsufficientBalance) {
-			return ErrInsufficientBalance
+		err := tx.Rollback()
+		if err != nil {
+			r.logger.Error("transaction failed", zap.Error(err))
 		}
+
 		return fmt.Errorf("change user balance: %w", err)
 	}
 
 	err = r.balanceRepo.ChangeUserBalance(tx, sendReq.Amount, sendReq.ToUser)
 	if err != nil {
-		tx.Rollback()
+		err := tx.Rollback()
+		if err != nil {
+			r.logger.Error("transaction failed", zap.Error(err))
+		}
+
 		return fmt.Errorf("send coins to user: %w", err)
 	}
 
 	err = r.userTransactionRepo.SetUserTransaction(tx, sendReq)
 	if err != nil {
-		tx.Rollback()
-		return fmt.Errorf("add to wallet transaction: %w", err)
+		err := tx.Rollback()
+		if err != nil {
+			r.logger.Error("transaction failed", zap.Error(err))
+		}
 	}
 
 	if err = tx.Commit(); err != nil {

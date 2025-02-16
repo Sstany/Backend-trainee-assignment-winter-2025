@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"crypto/ecdsa"
 	"errors"
 	"fmt"
 	"time"
@@ -25,10 +24,6 @@ type Auth struct {
 	secretRepo  port.SecretRepo
 
 	logger *zap.Logger
-
-	privateKey *ecdsa.PrivateKey
-	publicKey  *ecdsa.PublicKey
-	jwtIssuer  string
 }
 
 func NewAuth(

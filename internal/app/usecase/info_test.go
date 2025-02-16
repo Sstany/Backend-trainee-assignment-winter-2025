@@ -22,7 +22,7 @@ func TestInfo(t *testing.T) {
 	transactionController := repo.NewMockTransactionController(ctrl)
 	userTransactionRepo := repo.NewMockUserTransactionRepo(ctrl)
 
-	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo)
+	userUsecase := usecase.NewUser(shopRepo, balanceRepo, inventoryRepo, transactionController, userTransactionRepo, nil)
 
 	request := entity.InfoRequest{
 		Username: "test",

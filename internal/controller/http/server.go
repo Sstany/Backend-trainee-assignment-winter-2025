@@ -18,11 +18,13 @@ import (
 	"go.uber.org/zap"
 )
 
-var _ gen.StrictServerInterface = (*server)(nil)
+var _ gen.StrictServerInterface = (*Server)(nil)
 
-const usernameContextKey = "username"
+type contextKey string
 
-type server struct {
+const usernameContextKey contextKey = "username"
+
+type Server struct {
 	address     string
 	userUsecase usecase.UserUseCase
 	authUsecase usecase.AuthUseCase
@@ -34,8 +36,8 @@ func NewServer(
 	userUsecase usecase.UserUseCase,
 	authUsecase usecase.AuthUseCase,
 	address string,
-) *server {
-	return &server{
+) *Server {
+	return &Server{
 		address:     address,
 		userUsecase: userUsecase,
 		authUsecase: authUsecase,
@@ -43,7 +45,7 @@ func NewServer(
 	}
 }
 
-func (r *server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequestObject) (gen.PostApiAuthResponseObject, error) {
+func (r Server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequestObject) (gen.PostApiAuthResponseObject, error) {
 	if request.Body == nil {
 		return gen.PostApiAuth400JSONResponse{Errors: pkg.PointerTo("empty body")}, nil
 	}
@@ -68,7 +70,7 @@ func (r *server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequest
 	return gen.PostApiAuth200JSONResponse(gen.AuthResponse{Token: (*string)(token)}), nil
 }
 
-func (r *server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemRequestObject) (gen.GetApiBuyItemResponseObject, error) {
+func (r *Server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemRequestObject) (gen.GetApiBuyItemResponseObject, error) {
 	item := entity.Item(request.Item)
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
@@ -100,7 +102,7 @@ func (r *server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemReq
 
 }
 
-func (r *server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestObject) (gen.GetApiInfoResponseObject, error) {
+func (r *Server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestObject) (gen.GetApiInfoResponseObject, error) {
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
 	if !ok {
@@ -214,7 +216,7 @@ func convertInfoToInfoResponse(info *entity.InfoResponse) gen.InfoResponse {
 	}
 }
 
-func (r *server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoinRequestObject) (gen.PostApiSendCoinResponseObject, error) {
+func (r *Server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoinRequestObject) (gen.PostApiSendCoinResponseObject, error) {
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
 	if !ok {
@@ -239,7 +241,7 @@ func (r *server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoi
 	return gen.PostApiSendCoin200Response{}, nil
 }
 
-func (r *server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
+func (r *Server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 	return func(f nethttp.StrictHTTPHandlerFunc, operationID string) nethttp.StrictHTTPHandlerFunc {
 		return func(
 			ctx context.Context,
@@ -266,11 +268,11 @@ func (r *server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 			username, valid, err := r.authUsecase.AuthenticateWithAccessToken(tokenString)
 			if err != nil {
 				responseErr(w, "authentication with access token failed", http.StatusUnauthorized)
-				return
+				return nil, nil
 			}
 			if !valid {
 				responseErr(w, "Invalid token", http.StatusUnauthorized)
-				return
+				return nil, nil
 			}
 
 			uCtx := context.WithValue(ctx, usernameContextKey, username)
@@ -278,6 +280,14 @@ func (r *server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 			return f(uCtx, w, req, request)
 		}
 	}
+}
+
+func requestErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
+	responseErr(w, err.Error(), http.StatusInternalServerError)
+}
+
+func responseErrorHandlerFunc(w http.ResponseWriter, r *http.Request, err error) {
+	responseErr(w, err.Error(), http.StatusInternalServerError)
 }
 
 func responseErr(w http.ResponseWriter, errStr string, status int) {
@@ -297,8 +307,16 @@ func responseErr(w http.ResponseWriter, errStr string, status int) {
 	}
 }
 
-func (r *server) Start() {
-	srv := gen.NewStrictHandler(r, []gen.StrictMiddlewareFunc{r.NewAuthMiddleware()})
+func (r *Server) Start() {
+	srv := gen.NewStrictHandlerWithOptions(
+		r,
+		[]gen.StrictMiddlewareFunc{r.NewAuthMiddleware()},
+		gen.StrictHTTPServerOptions{
+			RequestErrorHandlerFunc:  requestErrorHandler,
+			ResponseErrorHandlerFunc: responseErrorHandlerFunc,
+		},
+	)
+
 	handler := gen.Handler(srv)
 
 	s := http.Server{

@@ -60,6 +60,7 @@ func Run(cfg *config.Config) {
 		inventoryRepo,
 		transactionController,
 		userTransactionRepo,
+		logger.Named("user"),
 	)
 
 	authUsecase, err := usecase.NewAuth(
