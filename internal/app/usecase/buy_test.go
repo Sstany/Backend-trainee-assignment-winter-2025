@@ -34,7 +34,7 @@ func TestBuy(t *testing.T) {
 	ctx := context.Background()
 	tx := repo.NewMockTransaction(ctrl)
 
-	shopRepo.EXPECT().GetItemPrice(ctx, "hoody").Return(300, true)
+	shopRepo.EXPECT().GetItemPrice("hoody").Return(300, true)
 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 	balanceRepo.EXPECT().ChangeUserBalance(tx, -300, "test").Return(nil)
 	inventoryRepo.EXPECT().AddItem(tx, "test", "hoody").Return(nil)
@@ -64,7 +64,7 @@ func TestBuyNotExistItem(t *testing.T) {
 	}
 	ctx := context.Background()
 
-	shopRepo.EXPECT().GetItemPrice(ctx, "something").Return(0, false)
+	shopRepo.EXPECT().GetItemPrice("something").Return(0, false)
 
 	err := userUsecase.Buy(ctx, itemRequest)
 	if !errors.Is(err, usecase.ErrItemNotExists) {
@@ -91,7 +91,7 @@ func TestWithInsufficientBalance(t *testing.T) {
 	ctx := context.Background()
 	tx := repo.NewMockTransaction(ctrl)
 
-	shopRepo.EXPECT().GetItemPrice(ctx, "hoody").Return(300, true)
+	shopRepo.EXPECT().GetItemPrice("hoody").Return(300, true)
 	transactionController.EXPECT().BeginTx(ctx).Return(tx, nil)
 	balanceRepo.EXPECT().ChangeUserBalance(tx, -300, "test").Return(port.ErrInsufficientBalance)
 	tx.EXPECT().Rollback().Return(port.ErrInsufficientBalance)

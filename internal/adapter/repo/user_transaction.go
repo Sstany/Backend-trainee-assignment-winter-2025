@@ -43,8 +43,9 @@ func (r *UserTransaction) GetRecievedOperations(ctx context.Context, username st
 	rows, err := r.db.QueryContext(ctx, getRecieved, username)
 	if err != nil {
 		return nil, err
-
 	}
+	defer rows.Close()
+
 	var recieved entity.Received
 	var res []entity.Received
 
@@ -70,8 +71,10 @@ func (r *UserTransaction) GetSentOperations(ctx context.Context, username string
 	rows, err := r.db.QueryContext(ctx, getSent, username)
 	if err != nil {
 		return nil, err
-
 	}
+
+	defer rows.Close()
+
 	var sent entity.Sent
 	var res []entity.Sent
 
@@ -85,5 +88,10 @@ func (r *UserTransaction) GetSentOperations(ctx context.Context, username string
 		}
 		res = append(res, sent)
 	}
+
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+
 	return res, nil
 }

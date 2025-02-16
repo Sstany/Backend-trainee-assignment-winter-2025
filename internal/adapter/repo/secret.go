@@ -22,7 +22,9 @@ import (
 var _ port.SecretRepo = (*Secret)(nil)
 var ErrInvalidSigningAlgo = errors.New("invalid signing algo")
 
-const defaultAccessExpiration = time.Hour * 24 * 100
+const defaultBits = 2048
+
+const defaultAccessExpiration = time.Hour * 24
 
 type Secret struct {
 	privateKey      *rsa.PrivateKey
@@ -37,7 +39,7 @@ func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *
 
 	info, err := os.Stat(jwtSigningKeyPath)
 	if os.IsNotExist(err) || info.IsDir() {
-		key, err = rsa.GenerateKey(rand.Reader, 2048)
+		key, err = rsa.GenerateKey(rand.Reader, defaultBits)
 		if err != nil {
 			logger.Error("generate key failed", zap.Error(err))
 			panic(err)
@@ -49,6 +51,7 @@ func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *
 			Bytes: keyBytes,
 		}
 
+		//nolint:govet // ok.
 		file, err := os.Create(jwtSigningKeyPath)
 		if err != nil {
 			logger.Error("create key file failed", zap.Error(err))
@@ -61,8 +64,8 @@ func NewSecret(logger *zap.Logger, jwtSigningKeyPath string, jwtIssuer string) *
 			logger.Error("encode key failed", zap.Error(err))
 			panic(err)
 		}
-
 	} else {
+		//nolint:govet // ok.
 		privateKey, err := os.ReadFile(jwtSigningKeyPath)
 		if err != nil {
 			logger.Error("read key failed", zap.Error(err))
@@ -118,7 +121,5 @@ func (r *Secret) ParseJWT(token string) (jwt.MapClaims, error) {
 	if err != nil {
 		return nil, err
 	}
-
 	return mapClaims, nil
-
 }

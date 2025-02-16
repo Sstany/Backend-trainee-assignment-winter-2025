@@ -56,6 +56,7 @@ func (r *Auth) Auth(ctx context.Context, login entity.Login) (*entity.Token, err
 	passHash, err := r.authRepo.ReadPassword(ctx, login.Username)
 	if err != nil {
 		// User registration.
+		//nolint:govet // ok.
 		if errors.Is(err, port.ErrNotFound) {
 			hash, err := r.passHasher.Hash(login.Password)
 			if err != nil {

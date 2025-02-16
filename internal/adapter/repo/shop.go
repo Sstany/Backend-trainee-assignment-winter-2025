@@ -1,8 +1,6 @@
 package repo
 
 import (
-	"context"
-
 	"shop/internal/app/port"
 
 	"go.uber.org/zap"
@@ -15,13 +13,12 @@ type Shop struct {
 }
 
 func NewShop(logger *zap.Logger) *Shop {
-
 	return &Shop{
 		logger: logger,
 	}
 }
 
-func (r *Shop) GetItemPrice(ctx context.Context, name string) (int, bool) {
+func (r *Shop) GetItemPrice(name string) (int, bool) {
 	var price int
 
 	switch name {

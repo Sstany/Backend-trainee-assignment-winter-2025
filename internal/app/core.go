@@ -40,7 +40,7 @@ func Run(cfg *config.Config) {
 
 	logger.Info("start migration")
 
-	if err := repo.Migrate(db, cfg.Migrations); err != nil {
+	if err = repo.Migrate(db, cfg.Migrations); err != nil {
 		panic(err)
 	}
 

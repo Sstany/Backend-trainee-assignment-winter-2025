@@ -22,7 +22,14 @@ var _ gen.StrictServerInterface = (*Server)(nil)
 
 type contextKey string
 
-const usernameContextKey contextKey = "username"
+const (
+	usernameContextKey contextKey = "username"
+
+	defaultReadTimeout     = time.Second * 10
+	defaultHeadReadTimeout = time.Second * 5
+	defaultWriteTimeout    = time.Second * 15
+	defaultIdleTimeout     = time.Minute * 2
+)
 
 type Server struct {
 	address     string
@@ -45,7 +52,11 @@ func NewServer(
 	}
 }
 
-func (r Server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequestObject) (gen.PostApiAuthResponseObject, error) {
+//nolint:revive,stylecheck // ok.
+func (r Server) PostApiAuth(
+	ctx context.Context,
+	request gen.PostApiAuthRequestObject,
+) (gen.PostApiAuthResponseObject, error) {
 	if request.Body == nil {
 		return gen.PostApiAuth400JSONResponse{Errors: pkg.PointerTo("empty body")}, nil
 	}
@@ -70,7 +81,11 @@ func (r Server) PostApiAuth(ctx context.Context, request gen.PostApiAuthRequestO
 	return gen.PostApiAuth200JSONResponse(gen.AuthResponse{Token: (*string)(token)}), nil
 }
 
-func (r *Server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemRequestObject) (gen.GetApiBuyItemResponseObject, error) {
+//nolint:revive,stylecheck // ok.
+func (r *Server) GetApiBuyItem(
+	ctx context.Context,
+	request gen.GetApiBuyItemRequestObject,
+) (gen.GetApiBuyItemResponseObject, error) {
 	item := entity.Item(request.Item)
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
@@ -99,10 +114,13 @@ func (r *Server) GetApiBuyItem(ctx context.Context, request gen.GetApiBuyItemReq
 	}
 
 	return gen.GetApiBuyItem200Response{}, nil
-
 }
 
-func (r *Server) GetApiInfo(ctx context.Context, request gen.GetApiInfoRequestObject) (gen.GetApiInfoResponseObject, error) {
+//nolint:revive,stylecheck // ok.
+func (r *Server) GetApiInfo(
+	ctx context.Context,
+	request gen.GetApiInfoRequestObject,
+) (gen.GetApiInfoResponseObject, error) {
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
 	if !ok {
@@ -216,7 +234,11 @@ func convertInfoToInfoResponse(info *entity.InfoResponse) gen.InfoResponse {
 	}
 }
 
-func (r *Server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoinRequestObject) (gen.PostApiSendCoinResponseObject, error) {
+//nolint:revive,stylecheck // ok.
+func (r *Server) PostApiSendCoin(
+	ctx context.Context,
+	request gen.PostApiSendCoinRequestObject,
+) (gen.PostApiSendCoinResponseObject, error) {
 	username := ctx.Value(usernameContextKey)
 	usrStr, ok := username.(string)
 	if !ok {
@@ -241,6 +263,7 @@ func (r *Server) PostApiSendCoin(ctx context.Context, request gen.PostApiSendCoi
 	return gen.PostApiSendCoin200Response{}, nil
 }
 
+//nolint:nonamedreturns,nilerr // ok.
 func (r *Server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 	return func(f nethttp.StrictHTTPHandlerFunc, operationID string) nethttp.StrictHTTPHandlerFunc {
 		return func(
@@ -282,10 +305,12 @@ func (r *Server) NewAuthMiddleware() nethttp.StrictHTTPMiddlewareFunc {
 	}
 }
 
+//nolint:revive // ok.
 func requestErrorHandler(w http.ResponseWriter, r *http.Request, err error) {
 	responseErr(w, err.Error(), http.StatusInternalServerError)
 }
 
+//nolint:revive // ok.
 func responseErrorHandlerFunc(w http.ResponseWriter, r *http.Request, err error) {
 	responseErr(w, err.Error(), http.StatusInternalServerError)
 }
@@ -322,10 +347,10 @@ func (r *Server) Start() {
 	s := http.Server{
 		Addr:              r.address,
 		Handler:           handler,
-		ReadTimeout:       10 * time.Second,
-		ReadHeaderTimeout: 5 * time.Second,
-		WriteTimeout:      15 * time.Second,
-		IdleTimeout:       2 * time.Minute,
+		ReadTimeout:       defaultReadTimeout,
+		ReadHeaderTimeout: defaultHeadReadTimeout,
+		WriteTimeout:      defaultWriteTimeout,
+		IdleTimeout:       defaultIdleTimeout,
 	}
 
 	log.Fatal(s.ListenAndServe())

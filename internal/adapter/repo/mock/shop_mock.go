@@ -5,7 +5,6 @@
 package repo
 
 import (
-	context "context"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,16 +34,16 @@ func (m *MockShopRepo) EXPECT() *MockShopRepoMockRecorder {
 }
 
 // GetItemPrice mocks base method.
-func (m *MockShopRepo) GetItemPrice(ctx context.Context, name string) (int, bool) {
+func (m *MockShopRepo) GetItemPrice(name string) (int, bool) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetItemPrice", ctx, name)
+	ret := m.ctrl.Call(m, "GetItemPrice", name)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(bool)
 	return ret0, ret1
 }
 
 // GetItemPrice indicates an expected call of GetItemPrice.
-func (mr *MockShopRepoMockRecorder) GetItemPrice(ctx, name interface{}) *gomock.Call {
+func (mr *MockShopRepoMockRecorder) GetItemPrice(name interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemPrice", reflect.TypeOf((*MockShopRepo)(nil).GetItemPrice), ctx, name)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetItemPrice", reflect.TypeOf((*MockShopRepo)(nil).GetItemPrice), name)
 }
